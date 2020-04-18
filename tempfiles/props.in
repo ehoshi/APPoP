@@ -1,0 +1,22 @@
+'.'                                  scratch directory
+'.'                                  data directory
+F                                    whether to read an eop startup file
+1                                    number of runs/suffixes
+'prod'                               suffix list
+1                                    how often to do anything
+T                                    whether to output traces
+F                                    whether to bin charges
+F                                    whether to calculate an ang corr fxn
+T                                    whether to calculate g(r)s
+F                                    whether to calculate gq(r)s
+F                                    whether to calculate gcom(r)s
+F                                    whether to calculate density profiles
+F                                    whether to get a dipole moment profile
+F                                    whether to calculate residence times
+F                                    whether to calculate cluster sizes
+F                                    whether to calculate a radius of gyr.
+F                                    whether to do a Cortis plot
+F                                    whether to get a photoejection spectrum
+F                                    whether to get an average system dipole
+F 3000000                             whether to take a snapshot, and when
+T                                    whether to calc the mean square dsplcmnt

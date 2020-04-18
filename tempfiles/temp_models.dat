@@ -1,0 +1,440 @@
+5                             version 5 of the file format
+1 'SPC water'                 model 1 = SPC:
+ 2                             2 atom types:
+  1 8                           atom type 1 = oxygen:
+   T                             with LJ constants:
+    6.5067d-7 3.166d0             epsilon = 0.15541 kcal/mol, sigma = 3.166 A
+   T                             with mass:
+    15.9994                       of about 16 amu (normal O mass)
+   F                             without flexible charges
+    T                             but with a fixed partial charge
+     -0.82d0                       of -0.82 e
+     F                             and without a J(r) zeta
+  2 1                           atom type 2 = hydrogen
+   F                             without LJ
+   T                             with mass:
+    1.00794                       of about 1 amu (normal H mass)
+   F                             without flexible charges
+    T                             but with a fixed partial charge
+     0.41d0                        of +0.41 e
+     F                             and without a J(r) zeta
+ 3 0                           3 frame atoms, 0 tag atoms:
+  1 1                           frame atom 1 is of type 1
+  2 2                           frame atom 2 is of type 2
+  3 2                           frame atom 3 is of type 2
+ 3                             3 constraints:
+  1 2 1.0d0                     rOH = 1.0 A
+  1 3 1.0d0                     rOH = 1.0 A
+  2 3 1.63298086184d0           rHH = 2 * rOH * sin(HOH/2) (HOH = 109.47 deg)
+ 0                             no Drude atoms
+ 0.0d0                         neutral molecule
+2 'TIP4P water'               model 2 = TIP4P
+ 3                             3 atom types:
+  1 8                           atom type 1 = oxygen (LJ, mass site):
+   T                             with LJ constants:
+    6.4913d-7 3.15358d0           epsilon = 0.15504 kcal/mol, sigma=3.15358 A
+   T                             with mass:
+    15.9994                       of about 16 amu (normal O mass)
+   F                             without flexible charges
+    F                             and without a fixed partial charge
+  2 8                           atom type 2 = oxygen (M site):
+   F                             without LJ
+   F                             without mass
+   F                             without flexible charge terms
+    T                             but with a fixed partial charge
+     -1.04d0                       of -1.04e
+     F                             and without a J(r) zeta
+  3 1                           atom type 3 = hydrogen
+   F                             without LJ
+   T                             with mass:
+    1.00794                       of about 1 amu (normal H mass)
+   F                             without flexible charge terms
+    T                             but with a fixed partial charge
+     0.52d0                        of +0.52 e
+     F                             and without a J(r) zeta
+ 3 1                           3 frame atoms, 1 tag atom:
+  1 1                           frame atom 1 is of type 1
+  2 3                           frame atom 2 is of type 3
+  3 3                           frame atom 3 is of type 3
+  4 1 2 0.743975857614428193 0.128012071192785876 0.128012071192785876
+ 3                             3 constraints:
+  1 2 0.9572d0                  rOH = 0.9572 A
+  1 3 0.9572d0                  rOH = 0.9572 A
+  2 3 1.51390065453d0           rHH = 2 * rOH * sin(HOH/2)  (HOH = 104.52 deg)
+ 0                             no Drude atoms
+ 0.0d0                         neutral molecule
+3 'SPC-FQ water'              model 3 = qSPC
+ 2                             2 atom types:
+  1 8                           atom type 1 = oxygen:
+   T                             with LJ constants:
+    1.231d-6 3.176d0             epsilon = 0.2941 kcal/mol, sigma = 3.176 A
+   T                             with mass:
+    15.9994                       of about 16 amu (normal O mass)
+   T                             with flexible charge terms:
+    7.410d-4 3.04                 chi=chi_H+73.33 kcal/mol, zeta = 1.61 1/bohr
+  2 1                           atom type 2 = hydrogen
+   F                             without LJ
+   T                             with mass:
+    1.00794                       of about 1 amu (normal H mass)
+   T                             with flexible charge terms:
+    4.34d-4 1.8897                chi = 4.5 eV, zeta = 1.0 1/bohr
+ 3 0                           3 frame atoms, 0 tag atoms:
+  1 1                           frame atom 1 is of type 1
+  2 2                           frame atom 2 is of type 2
+  3 2                           frame atom 3 is of type 2
+ 3                             3 constraints:
+  1 2 1.0d0                     rOH = 1.0 A
+  1 3 1.0d0                     rOH = 1.0 A
+  2 3 1.63298086184d0           rHH = 2 * rOH * sin(HOH/2) (HOH = 109.47 deg)
+ 0                             no Drude atoms
+ 0.0d0                         neutral molecule
+4 'TIP4P-FQ water'            model 4 = qTIP4P
+ 3                             3 atom types:
+  1 8                           atom type 1 = oxygen (LJ, mass site):
+   T                             with LJ constants:
+    1.198d-6 3.159d0              epsilon = 0.2862 kcal/mol, sigma=3.159 A
+   T                             with mass:
+    15.9994                       of about 16 amu (normal O mass)
+   F                             without flexible charge terms
+    F                             and without a fixed partial charge
+  2 8                           atom type 2 = oxygen (M site):
+   F                             without LJ
+   F                             without mass
+   T                             with flexible charge terms:
+    7.2075d-4 3.08d0              chi = chi_H+68.49 kcal/mol, zeta = 1.63 1/bohr
+  3 1                           atom type 3 = hydrogen
+   F                             without LJ
+   T                             with mass:
+    1.00794                       of about 1 amu (normal H mass)
+   T                             with flexible charge terms:
+    4.34d-4 1.70d0                chi = 4.5 eV, zeta = 0.90 1/bohr
+ 3 1                           3 frame atoms, 1 tag atom:
+  1 1                           frame atom 1 is of type 1
+  2 3                           frame atom 2 is of type 3
+  3 3                           frame atom 3 is of type 3
+  4 1 2 0.743975857614428193 0.128012071192785876 0.128012071192785876
+ 3                             3 constraints:
+  1 2 0.9572d0                  rOH = 0.9572 A
+  1 3 0.9572d0                  rOH = 0.9572 A
+  2 3 1.51390065453d0           rHH = 2 * rOH * sin(HOH/2)  (HOH = 104.52 deg)
+ 0                             no Drude atoms
+ 0.0d0                         neutral molecule
+5 'LJ Cl-'                    model 5 = Cl-:
+ 1                             1 atom type:
+  1 17                          atom type 1 = chlorine
+   T                             with LJ constants:
+    4.93d-7 4.311d0               epsilon = 0.1178 kcal/mol, sigma = 4.417 A (4.94d-7/4.417 for Jorgensen's combining rules, 4.93d-7/4.311 for Lorentz-Berthelot combining rules)
+   T                             with mass:
+    35.4527                       (normal Cl mass)
+   F                             without flexible charge terms
+    T                             but with a fixed partial charge
+     -1.0d0                        of -1.0 e
+     F                             and without a J(r) zeta
+ 1 0                           1 frame atom, 0 tag atoms:
+  1 1                           frame atom 1 is of type 1
+ 0                             0 constraints	
+ 0                             no Drude atoms
+ -1.0d0                         monovalent cation
+6 'Drude ion Cl- (TIP4P-FQ)'  model 6 = Drude Cl- for use with TIP4P-FQ:
+ 2                             2 atom types:
+  1 17                          atom type 1 = chlorine (LJ, mass site)
+   T                             with LJ constants:
+   1.25d-7 4.00d0               epsilon = 0.0299 kcal/mol, sigma = 4.00 A
+   T                             with mass:
+    35.3627                       of < 35.5 amu (total mass = 35.5 amu)
+   F                             without flexible charge terms
+    T                             but with a fixed partial charge
+     4.0d0                         of +4.0 e
+     T                             and with a J(r) zeta
+      2.307                           zeta = 2.307 1/A
+  2 17                          atom type 2 = chlorine (Drude site)
+   F                             without LJ constants
+   T                             with mass:
+    0.090                         of 0.09 amu
+   F                             without flexible charge terms
+    T                             but with a fixed partial charge
+     -5.0d0                        of -5.0 e
+     T                             and with a J(r) zeta
+      2.307                          zeta = 2.307 1/A
+ 2 0                           2 frame atoms, 0 tag atoms:
+  1 1                           frame atom 1 is of type 1
+  2 2                           frame atom 2 is of type 2
+ 0                             0 constraints
+ 1                             1 Drude atom pair:
+  1 2 0.00924                   atoms 1/2, mw^2=2205 kcal/mol/A^2(alpha=3.76 A^3)
+ -1.0d0                        monovalent anion
+7 'TIP4P-MQ water'            model 7 = mean-charge TIP4P water
+ 3                             3 atom types:
+  1 8                           atom type 1 = oxygen (LJ, mass site):
+   T                             with LJ constants:
+    1.198d-6 3.159d0              epsilon = 0.2862 kcal/mol, sigma=3.159 A
+   T                             with mass:
+    15.9994                       of about 16 amu (normal O mass)
+   F                             without flexible charge terms
+    F                             and without a fixed partial charge
+  2 8                           atom type 2 = oxygen (M site):
+   F                             without LJ
+   F                             without mass
+   F                             without flexible charge terms:
+    T                             but with a fixed partial charge
+     -1.254                        of -1.254 e
+     T                             and with a J(r) zeta
+      3.08d0                        zeta = 1.63 1/bohr
+  3 1                           atom type 3 = hydrogen
+   F                             without LJ
+   T                             with mass:
+    1.00794                       of about 1 amu (normal H mass)
+   F                             without flexible charge terms:
+    T                             but with a fixed partial charge
+     0.627                         of 0.627 e
+     T                             and with a J(r) zeta
+      1.70d0                        zeta = 0.90 1/bohr
+ 3 1                           3 frame atoms, 1 tag atom:
+  1 1                           frame atom 1 is of type 1
+  2 3                           frame atom 2 is of type 3
+  3 3                           frame atom 3 is of type 3
+  4 1 2 0.743975857614428193 0.128012071192785876 0.128012071192785876
+ 3                             3 constraints:
+  1 2 0.9572d0                  rOH = 0.9572 A
+  1 3 0.9572d0                  rOH = 0.9572 A
+  2 3 1.51390065453d0           rHH = 2 * rOH * sin(HOH/2)  (HOH = 104.52 deg)
+ 0                             no Drude atoms
+ 0.0d0                         neutral molecule
+8 'CF water'                  model 8 = Emilio's water
+ 2                             3 atom types:
+  1 8                           atom type 1 = oxygen:
+   F                             with LJ constants:
+   T                             with mass:
+    15.9994                       of about 16 amu (normal O mass)
+   F                             without flexible charge terms
+    T                             and with a fixed partial charge
+     -0.659660000000000024         of -.65966 e
+     F                             and without a J(r) zeta
+  2 1                           atom type 2 = hydrogen:
+   F                             without LJ
+   T                             with mass:
+    1.00794                       of about 1 amu (normal H mass)
+   F                             without flexible charge terms:
+    T                             but with a fixed partial charge
+     0.329830000000000012          of 0.32983 e
+     F                             and without a J(r) zeta
+ 3 0                           3 frame atoms, 0 tag atom:
+  1 1                           frame atom 1 is of type 1
+  2 2                           frame atom 2 is of type 2
+  3 2                           frame atom 3 is of type 2
+ 0                             3 constraints:
+ 0                             no Drude atoms
+ 0.0d0                         neutral molecule
+9 'zeta/LJ Cl- (TIP4P-FQ)'    model 9 = LJ Cl- for use with TIP4P-FQ:
+ 1                             2 atom types:
+  1 17                          atom type 1 = chlorine
+   T                             with LJ constants:
+   1.499d-7 4.0d0               epsilon = 0.0299 kcal/mol, sigma = 4.00 A
+   T                             with mass:
+    35.4527                       of about 35.5 amu (normal Cl mass)
+   F                             without flexible charge terms
+    T                             but with a fixed partial charge
+     -1.0d0                        of -1.0 e
+     T                             and with a J(r) zeta
+      2.415                           zeta = 2.307 1/A
+ 1 0                           2 frame atoms, 0 tag atoms:
+  1 1                           frame atom 1 is of type 1
+ 0                             0 constraints
+ 0                             no Drude atoms
+ -1.0d0                        monovalent anion
+10 'Drude ion Cl- (TIP4P)'    model 10 = Drude Cl- (for use with TIP4P):
+ 2                             2 atom types:
+  1 17                          atom type 1 = chlorine (LJ, mass site)
+   T                             with LJ constants:
+   33.3d-7 3.74d0               epsilon = 0.0299 kcal/mol, sigma = 4.00 A
+   T                             with mass:
+    35.3627                       of < 35.5 amu (total ion mass = 35.4527 amu)
+   F                             without flexible charge terms
+    T                             but with a fixed partial charge
+     4.0d0                         of +4.0 e
+     F                             and without a J(r) zeta
+  2 17                          atom type 2 = chlorine (satellite site)
+   F                             without LJ constants
+   T                             with mass:
+    0.090                         of 0.09 amu
+   F                             without flexible charge terms
+    T                             but with a fixed partial charge
+     -5.0d0                        of -5.0 e
+     F                             and without a J(r) zeta
+ 2 0                           2 frame atoms, 0 tag atoms:
+  1 1                           frame atom 1 is of type 1
+  2 2                           frame atom 2 is of type 2
+ 0                             0 constraints
+ 1                             1 Drude atom pair:
+  1 2 0.00924                   atoms 1/2, mw^2=2205 kcal/mol/A^2(alpha=3.76 A^3)
+ -1.0d0                        monovalent anion
+11 'Ar'                       model 11 = LJ Argon
+ 1                             1 atom type:
+  1 18                          atom type 1 = argon:
+   T                             with LJ constants:
+    9.977d-7 3.405d0              epsilon = 0.24 kcal/mol, sigma = 3.405 A
+   T                             with mass:
+    39.948                        of about 40 amu (normal Ar mass)
+   F                             without flexible charge terms
+    F                             and without a fixed partial charge
+ 1 0                           1 frame atom, 0 tag atoms:
+  1 1                           frame atom 1 is of type 1
+ 0                             no constraints
+ 0                             no Drude atoms
+ 0.0d0                         neutral molecule
+12 'light Ar'                 model 12 = LJ Argon, wrong mass (+)
+ 1                             1 atom type:
+  1 10                          atom type 1 = Neon-like:
+   T                             with LJ constants:
+    9.977d-7 3.405d0              epsilon = 0.24 kcal/mol, sigma = 3.405 A
+   T                             with mass:
+    39.948                        as heavy as a normal Ar
+   F                             without flexible charge terms
+    T                             and without a fixed partial charge
+     1.0d0                         of +1 |e|
+     F
+ 1 0                           1 frame atom, 0 tag atoms:
+  1 1                           frame atom 1 is of type 1
+ 0                             no constraints
+ 0                             no Drude atoms
+ 0.0d0                         neutral molecule
+13 'Drude ion Cl- (TIP4P-FQ)'  model 13 = neutral Drude Cl (TIP4P-FQ) for PES:
+ 2                             2 atom types:
+  1 17                          atom type 1 = chlorine (LJ, mass site)
+   T                             with LJ constants:
+   1.25d-7 4.00d0               epsilon = 0.0299 kcal/mol, sigma = 4.00 A
+   T                             with mass:
+    35.3627                       of < 35.5 amu (total mass = 35.5 amu)
+   F                             without flexible charge terms
+    T                             but with a fixed partial charge
+     5.0d0                         of +5.0 e
+     T                             and with a J(r) zeta
+      2.307                           zeta = 2.307 1/A
+  2 17                          atom type 2 = chlorine (Drude site)
+   F                             without LJ constants
+   T                             with mass:
+    0.090                         of 0.09 amu
+   F                             without flexible charge terms
+    T                             but with a fixed partial charge
+     -5.0d0                        of -5.0 e
+     T                             and with a J(r) zeta
+      2.307                          zeta = 2.307 1/A
+ 2 0                           2 frame atoms, 0 tag atoms:
+  1 1                           frame atom 1 is of type 1
+  2 2                           frame atom 2 is of type 2
+ 0                             0 constraints
+ 1                             1 Drude atom pair:
+  1 2 0.00924                   atoms 1/2, mw^2=2205 kcal/mol/A^2(alpha=3.76 A^3)
+ 0.0d0                         neutral atom
+14 'LJ Cl-'                   model 5 = uncharged Cl- for use in PES
+ 1                             1 atom type:
+  1 17                          atom type 1 = chlorine
+   T                             with LJ constants:
+    4.93d-7 4.311d0               epsilon = 0.1178 kcal/mol, sigma = 4.417 A (4.94d-7/4.417 for Jorgensen's combining rules, 4.93d-7/4.311 for Lorentz-Berthelot combining rules)
+   T                             with mass:
+    35.4527                       (normal Cl mass)
+   F                             without flexible charge terms
+    F                             and without a fixed partial charge
+ 1 0                           1 frame atom, 0 tag atoms:
+  1 1                           frame atom 1 is of type 1
+ 0                             0 constraints	
+ 0                             no Drude atoms
+ 0.0d0                          neutral atom
+15 'Ar+'                      model 15 = positively charged LJ Argon for debug
+ 1                             1 atom type:
+  1 18                          atom type 1 = argon:
+   T                             with LJ constants:
+    9.977d-7 3.405d0              epsilon = 0.24 kcal/mol, sigma = 3.405 A
+   T                             with mass:
+    39.948                        of about 40 amu (normal Ar mass)
+   F                             without flexible charge terms
+    T                             but with a fixed partial charge
+     1.0d0                         of +1 e
+     F                             but without a J(r) zeta
+ 1 0                           1 frame atom, 0 tag atoms:
+  1 1                           frame atom 1 is of type 1
+ 0                             no constraints
+ 0                             no Drude atoms
+ 1.0d0                         neutral molecule
+16 'Ar-'                      model 16 = negatively charged LJ Argon for debug
+ 1                             1 atom type:
+  1 10                          atom type 1 = argon (labeled neon):
+   T                             with LJ constants:
+    9.977d-7 3.405d0              epsilon = 0.24 kcal/mol, sigma = 3.405 A
+   T                             with mass:
+    39.948                        of about 40 amu (normal Ar mass)
+   F                             without flexible charge terms
+    T                             but with a fixed partial charge
+     -1.0d0                        of -1 e
+     F                             but without a J(r) zeta
+ 1 0                           1 frame atom, 0 tag atoms:
+  1 1                           frame atom 1 is of type 1
+ 0                             no constraints
+ 0                             no Drude atoms
+ -1.0d0                        neutral molecule
+17 'custom TIP4P-FQ water'    model 4 = TIP4P-FQ with custom parameters
+ 3                             3 atom types:
+  1 8                           atom type 1 = oxygen (LJ, mass site):
+   T                             with LJ constants:
+    6.4913e-7 3.15358e0                     epsilon = 0.2862 kcal/mol, sigma=3.159 A
+   T                             with mass:
+    15.9994                       of about 16 amu (normal O mass)
+   F                             without flexible charge terms
+    F                             and without a fixed partial charge
+  2 8                           atom type 2 = oxygen (M site):
+   F                             without LJ
+   F                             without mass
+   T                             with flexible charge terms:
+    7.2075e-4 3.08d0                    chi = chi_H+68.49 kcal/mol, zeta = 1.63 1/bohr
+  3 1                           atom type 3 = hydrogen
+   F                             without LJ
+   T                             with mass:
+    1.00794                       of about 1 amu (normal H mass)
+   T                             with flexible charge terms:
+    4.35e-4 1.70d0                    chi = 4.5 eV, zeta = 0.90 1/bohr
+ 3 1                           3 frame atoms, 1 tag atom:
+  1 1                           frame atom 1 is of type 1
+  2 3                           frame atom 2 is of type 3
+  3 3                           frame atom 3 is of type 3
+  4 1 2 0.743975857614428193 0.128012071192785876 0.128012071192785876
+ 3                             3 constraints:
+  1 2 0.9572d0                  rOH = 0.9572 A
+  1 3 0.9572d0                  rOH = 0.9572 A
+  2 3 1.51390065453d0           rHH = 2 * rOH * sin(HOH/2)  (HOH = 104.52 deg)
+ 0                             no Drude atoms
+ 0.0d0                         neutral molecule
+18 'custom TIP4P water'       model 18 = TIP4P-like with custom parameters
+ 3                             3 atom types:
+  1 8                           atom type 1 = oxygen (LJ, mass site):
+   T                             with LJ constants:
+    EPS_PLACE SIG_PLACE                     epsilon = 0.15504 kcal/mol, sigma=3.15358 A
+   T                             with mass:
+    15.9994                       of about 16 amu (normal O mass)
+   F                             without flexible charges
+    F                             and without a fixed partial charge
+  2 8                           atom type 2 = oxygen (M site):
+   F                             without LJ
+   F                             without mass
+   F                             without flexible charge terms
+    T                             but with a fixed partial charge
+     qO_PLACE                            of -1.04e
+     F                             and without a J(r) zeta
+  3 1                           atom type 3 = hydrogen
+   F                             without LJ
+   T                             with mass:
+    1.00794                       of about 1 amu (normal H mass)
+   F                             without flexible charge terms
+    T                             but with a fixed partial charge
+     qH_PLACE                            of +0.52 e
+     F                             and without a J(r) zeta
+ 3 1                           3 frame atoms, 1 tag atom:
+  1 1                           frame atom 1 is of type 1
+  2 3                           frame atom 2 is of type 3
+  3 3                           frame atom 3 is of type 3
+  4 1 2 0.743975857614428193 0.128012071192785876 0.128012071192785876
+ 3                             3 constraints:
+  1 2 0.9572d0                  rOH = 0.9572 A
+  1 3 0.9572d0                  rOH = 0.9572 A
+  2 3 1.51390065453d0           rHH = 2 * rOH * sin(HOH/2)  (HOH = 104.52 deg)
+ 0                             no Drude atoms
+ 0.0d0                         neutral molecule

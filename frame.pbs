@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# Request that regular output and terminal output go to the same file
+#PBS -j oe
+#PBS -l select=7:ncpus=3:mpiprocs=1:mem=4gb,walltime=72:00:00
+#PBS -N PLZ_work
+
+# Ensure to parse the script to set the env vars for the compiler you used.
+source ~/.bashrc
+
+# This lets us run more than one mpd ring on the same node without conflict
+#export MPD_CON_EXT=ext_${PBS_JOBID}
+
+# number of boxes
+NUM_NODES=`uniq $PBS_NODEFILE |wc -l |gawk '//{print $1}'`
+# number of cores
+NPROCS=`wc -l $PBS_NODEFILE |gawk '//{print $1}'`
+
+echo The master node of this job is `hostname`
+echo The working directory is `echo $PBS_O_WORKDIR`
+echo The node file is $PBS_NODEFILE
+echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+echo This job runs on the following nodes:
+echo `cat $PBS_NODEFILE`
+echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+echo This job has allocated $NPROCS cores
+echo This job has allocated $NUM_NODES nodes
+echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+
+echo job starting at `date`
+cd $PBS_O_WORKDIR
+
+source /etc/profile.d/modules.sh
+module purge
+module add gcc/6.1.0
+module add openmpi/1.6.4-eth
+mpirun -np 7 -tag-output ~/systems/Water_code/APPoP/frame start_2.in > test1.out 2>test1ERR.out
+echo job finished at `date`

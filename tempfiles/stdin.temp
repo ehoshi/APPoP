@@ -1,0 +1,128 @@
+ 14
+ '.'   '.'
+ 'eor.A_PLACE' 'none' 'none'
+ 'bulk TIP4P, Ewald, test'
+ F     F     30000 0.025
+ STEP_PLACE  T     10    0     0   1
+ F     1000
+ 9.85  0.0   0.2   9.85  0.0 12    1.0
+ 1     4     0
+ T     T     F     6.0   1.6
+ TEMP_PLACE   2     300   3000 TF_PLACE   25000 200000 1.0 1.0 F
+ F     F     2     1000     0.0 F     0.0   0.0   0.0
+ T     T     200   'SUFFIX_PLACE'
+
+What are these values?   
+
+iosimv
+datdir scrdir
+stfile syfile qifile
+rinfo
+ctflag qslvfl nqsolv qm
+ndstep pbflag dtbig  nl     nlf    nhf
+dslvfl ndsolv
+fcutr  fcutd  fcutb  fnearr fneard iplint hvywt
+interJ intraJ ncint
+[imid1 imid2  icustJ]
+ewlflg ewlkfl ewsrfl ewlkap ewlkmx
+T      Ttol   nscint stint  vscflg nsceql mxsceq qT     qTrang qvscfl
+cbnflg dbflag iseed  nioint hbonde ocflag Efield(1..3)
+ioflg  binflg nbnint suffix
+
+What do they mean?
+
+Version check
+-------------
+iosimv = file format version
+
+Directories
+-----------
+datdir = directory for data files
+scrdir = directory for trajectory file
+
+Initialization files
+--------------------
+stfile = file with full startup info ('none' to use syfile) 
+syfile = file with startup position info ('none' to use stfile)
+qifile = file with inital charge info ('none' for random)
+rinfo  = description of run
+
+Charge equilibration parameters
+-------------------------------
+ctflag = whether charge can transfer between molecules
+qslvfl = whether to resolve for charges (by diagonalizing a matrix)
+nqsolv = number of dynamics steps between resolvings
+qm     = fictitious mass of the charge "particles"
+
+Dynamics parameters
+-------------------
+ndstep = number of dynamics steps to perform after charge equilibration
+pbflag = whether to do periodic boundary conditions
+dtbig  = size of the (big) timestep
+nl     = number of light subsystem timesteps per heavy subsytem timestep
+nlf    = number of light, fast subsystem timesteps per light subsystem timestep
+nhf    = number of heavy, fast subsystem timesteps per heavy subsystem timestep
+
+Drude oscillator parameters
+---------------------------
+dslvfl = whether to resolve for Drude oscillator positions
+ndsolv = number of dynamics steps between resolvings
+
+System parameters
+-----------------
+fcutr  = near end of cutoff range
+fcutd  = width of cutoff range
+fcutb  = lenth of buffer region outside the cutoff
+fnearr = near end of switching range for rRESPA near/far split
+fneard = width of switching range for rRESPA near/far split
+iplint = number of timesteps between pair list updates
+hvywt  = cutoff weight for the rRESPA mass split
+
+Coulomb interaction parameters
+------------------------------
+interJ = default intermolecular Coulomb interaction type / 1:1/r, 2:precalc J()
+intraJ = default intramolecular Coulomb interaction type \ 3:J()
+ncint  = number of "custom" intermolecular interactions
+imid1  = 1st of a pair of molecule ids with a custom interaction | repeat
+imid2  = 2nd of a pair of molecule ids with a custom interaction | this line
+icustJ = custom interaction type for the pair                    | ncint times
+
+Ewald parameters
+----------------
+ewlflg = whether to use Ewald summation
+ewlkfl = whether to use the k-space part of the Ewald sum
+ewsrfl = whether to include the (vacuum) surface component in the Ewald energy
+ewlkap = Ewald kappa param (Gaussian chg dist exponent, units of box size)
+ewlkmx = largest |k| to use in the Ewald sum (|k| = 2 pi n / L)
+
+Temperature control parameters
+------------------------------
+T      = temperature of the simulation
+Trange = error allowed in (average) T
+nscint = number of timesteps between velocity rescalings
+stint  = statistical ineffiency (corr. time) of temperature (neg. if unknown)
+vscflg = whether to rescale velocities
+nsceql = number of timesteps w/o a rescaling necessary for equilibrium
+mxsceq = number of timesteps after which equilibrium is forced
+qT     = temperature of the charge particles
+qTrang = (relative) drift allowed in qT
+qvscfl = whether to rescale the charge velocities
+
+Miscellaneous parameters
+------------------------
+cbnflg = whether to use the binning info in the eor file
+dbflag = whether to run in debug mode
+iseed  = seed for random number generator
+nioint = number of timesteps between dumps to data files
+hbonde = dimer energy required for a hydrogen bond (in kcal/mol)
+ocflag = whether to intentionally overcount the h2o energy
+suffix = suffix tacked onto output files to allow concurrent runs
+Efield = electric field (constant)
+
+I/O parameters
+--------------
+ioflg  = whether to do any (non-essential) I/O
+binflg = whether to count the binning-type statistics
+nbnint = number of steps between binnings
+iobwfl = whether to do the bulk water I/O and binning
+suffix = suffix to append to data files
