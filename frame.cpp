@@ -1,13 +1,11 @@
+#include "frame.h"
+
 #include <csignal>
 #include <fstream>
 #include <iostream>
 
 #include <armadillo>
 #include <mpi.h>
-
-
-void MASTER(int, int, arma::mat);
-void WORKER(int);
 
 
 std::ofstream GLOBAL_debuglog;

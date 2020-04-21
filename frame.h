@@ -209,6 +209,10 @@ std::ostream& operator<<(std::ostream& os, const simplex& s)
      LIST OF FUNCTIONS USED SOMEWHERE IN THE PROGRAM
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
+// master and worker
+void MASTER(int, int, arma::mat);
+void WORKER(int);
+
 // calculation and other functions
 int gcalc(double &, double &, WORKER_status &, std::ofstream &, unsigned long int, double, double);
 int gr_calc(std::string, std::string, double &, double&);

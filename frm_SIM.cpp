@@ -65,9 +65,6 @@ extend(simplex *blob)
 {
    int idim, status;
 
-   void getbase(simplex*);
-   int order2(simplex*, bool);
-
    // no one should call extend() without knowing which point is worst,
    // and where the base is, but we'd better be sure
    if (stale == blob->sort_status) {
@@ -101,9 +98,6 @@ contract(simplex *blob)
 {
    int idim, status;
 
-   void getbase(simplex*);
-   int order2(simplex*, bool);
-
    // no one should call contract() without knowing which point is worst,
    // and where the base is, but we'd better be sure
    if (stale == blob->sort_status) {
@@ -136,9 +130,6 @@ void
 collapse(simplex *blob)
 {
    int idim, ivert, status;
-
-   void getbase(simplex*);
-   int order2(simplex*, bool);
 
    // no one should call collapse() without knowing which point is best,
    // but we'd better be sure
