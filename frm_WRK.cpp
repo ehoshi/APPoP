@@ -2,6 +2,7 @@
 //#define DEBUG2
 #include "frame.h"
 
+#include <cassert>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -212,6 +213,7 @@ WORKER(int id)
          g_UNC   = -1.0;
 
          // declare the vector for coordinate and recieve the coordinate.
+         assert(dimension > 0);
          arma::vec coordinate(static_cast<arma::uword>(dimension));
 
          MPI_Recv(coordinate.memptr(), dimension, MPI_DOUBLE, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &StatMPI);

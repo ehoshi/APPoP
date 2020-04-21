@@ -3,10 +3,12 @@
 //#define AUXDEBUG
 #include "frame.h"
 
+#include <cassert>
 #include <ctime>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <sstream>
 
 #include <armadillo>
@@ -19,6 +21,10 @@ verbosity outputLevel;
 void
 MASTER(int id, int P, arma::mat inP)
 {
+   // rows and columns will be casted to int later
+   assert(inP.n_rows < std::numeric_limits<int>::max());
+   assert(inP.n_cols < std::numeric_limits<int>::max());
+
    int PointID_count = 0;
    bool done_prog = false;
    double g_VALUE = 0.0;
@@ -474,6 +480,7 @@ MASTER(int id, int P, arma::mat inP)
                PrintDebug(Mstring.str(), MASlog, 7);
             }
             // send starting parameter
+            assert(temp_dim > 0);
             arma::vec tempvec(static_cast<arma::uword>(temp_dim));
             SetVec(tempvec, temp_dim, Pj, blob);
 
