@@ -11,13 +11,12 @@ std::ofstream GLOBAL_debuglog;
 
 
 ///////////////////////Signal Handler for waitpid///////////////////////
-static void
+extern "C" void
 sigStuff(int signo)
 {
    if (SIGCHLD == signo) {
       signal(SIGCHLD, sigStuff);
    }
-//   std::cerr << "Signal catch" << std::endl;
 }
 ////////////////////////////////////////////////////////////////////////
 
