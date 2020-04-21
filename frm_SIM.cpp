@@ -1026,3 +1026,15 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
              << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
    return simplex_wait;
 }
+
+
+/*
+ * Local Variables:
+ * mode: c++
+ * c-file-style: "linux"
+ * c-basic-offset: 3
+ * indent-tabs-mode: nil
+ * End:
+ *
+ * vim: set autoindent expandtab shiftwidth=3 softtabstop=3 tabstop=3:
+ */
