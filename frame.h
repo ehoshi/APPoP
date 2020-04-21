@@ -1,22 +1,9 @@
-#include <iostream>
-#include <cstdlib>
-#include <iomanip>
-#include <mpi.h>
-#include <armadillo>
 #include <fstream>
-#include <string>
-#include <sys/types.h>
-#include <unistd.h>
-#include <sys/wait.h>
-#include <signal.h>
-#include <errno.h>
-#include <sys/time.h>
+#include <iostream>
 #include <sstream>
-#include <cstdio>
-#include <ctime>
-#include <limits>
-#include <algorithm>
-#include <sys/stat.h>
+#include <string>
+
+#include <armadillo>
 
 
 #define MAXAUX  2

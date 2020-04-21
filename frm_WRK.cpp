@@ -2,6 +2,21 @@
 //#define DEBUG2
 #include "frame.h"
 
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+#include <fstream>
+#include <iostream>
+#include <signal.h>
+#include <sstream>
+#include <sys/errno.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+#include <armadillo>
+#include <mpi.h>
+
 
 void
 WORKER(int id)
@@ -64,15 +79,15 @@ WORKER(int id)
    }
    else {
       // change the working directory
-      int chkCHDIR = chdir(sysstr7.str().c_str());
+      int chkCHDIR = ::chdir(sysstr7.str().c_str());
       if (-1 == chkCHDIR) {
          std::cout << "FRAME ERROR: cannot change directory by processor" << id <<'\n'
-                   << "--" << strerror(errno) << std::endl;
+                   << "--" << std::strerror(errno) << std::endl;
          Wstat = error;
          // send error status to MASTER
       }
       else {
-         int chkcpy = system("cp ../runfiles/* .");
+         int chkcpy = std::system("cp ../runfiles/* .");
          if (-1 == chkcpy) {
             std::cout << "FRAME ERROR: cannot copy templates by processor" << id << std::endl;
             Wstat = error;
@@ -172,7 +187,7 @@ WORKER(int id)
 
             // close the output file from previous run
             if (outlog.is_open()) {
-               const time_t Ctime = time(0);
+               const time_t Ctime = std::time(0);
                outlog << "+++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
                outlog << "This is end of out put on process " << id
                       << "-" << simcount -1 << std::endl;
@@ -257,12 +272,12 @@ WORKER(int id)
             */
 
             // fork the process. Since fork causes a mess using MPI, vfork is used
-            parent = getpid();  // parent pid
-            pid = vfork();  // child pid
+            parent = ::getpid();  // parent pid
+            pid = ::vfork();  // child pid
 
             if (pid < 0){
                outlog << "ERROR: failed to fork by process " << id << std::endl;
-               perror("fork");
+               std::perror("fork");
                Wstat = error;
             }
             /*
@@ -272,11 +287,11 @@ WORKER(int id)
             */
             else if (0 == pid) {
                std::cout << "\nFRAME: This is child process on process " << id << "." << std::endl;
-               int chkEXC1 = execl("./eqi.sh", "eqi", (char *)0);
+               int chkEXC1 = ::execl("./eqi.sh", "eqi", (char *)0);
                if (-1 == chkEXC1) {
                   std::cout << "FRAME ERROR: failed at execl (child) by proc " << id << std::endl;
-                  perror("execl");
-                  exit(1);
+                  std::perror("execl");
+                  std::exit(1);
                }
                std::cout << "FRAME: This should not print upon success" << std::endl;
             }
@@ -293,7 +308,7 @@ WORKER(int id)
                outlog    << "Printed from parallel process id " << id << '\n'
                          << "The pID of the child process(eqi) is "  << pid <<'\n'
                          << "The pID of the parent process (eqi) is " << parent << '\n' << std::endl;
-               sleep(1);  // this gives time for child process to start execl
+               ::sleep(1);  // this gives time for child process to start execl
 
                int chkOut = StatChk(pid, Wstat, id);
                if (0 == chkOut) {  // set Wsit to equilibrium start
@@ -343,23 +358,23 @@ WORKER(int id)
                Wsit = ProdStart;
                outlog << "-- starting production... " << std::endl;
 
-               parent = getpid();  // parent pid
-               pid = vfork();  // child pid
+               parent = ::getpid();  // parent pid
+               pid = ::vfork();  // child pid
 
                if (pid < 0) {
                   outlog << "ERROR: failed to fork by process " << id << std::endl;
-                  perror("fork");
+                  std::perror("fork");
                   Wstat = error;
                }
                else if (pid == 0) {  // child process
                   std::cout << "\nFRAME: This is child process on process " << id << ".\n" 
                             << "About to start production" << std::endl;
 
-                  int chkEXC2 = execl("./prod.sh", "prod", (char *)0);
+                  int chkEXC2 = ::execl("./prod.sh", "prod", (char *)0);
                   if (-1 == chkEXC2) {
                      std::cout << "FRAME ERROR: failed at execl (child) by proc " << id << std::endl;
-                     perror("execl");
-                     exit(1);
+                     std::perror("execl");
+                     std::exit(1);
                   }
                   std::cout << "FRAME: This should not print upon success" << std::endl;
                }
@@ -369,12 +384,12 @@ WORKER(int id)
                              << "The pID of the child process(prod) is "  << pid <<'\n'
                              << "The pID of the parent process (prod) is " << parent;
                   PrintDebug(Pstring.str(), outlog, 1);
-                  sleep(1);  // this gives time for child process to start execl
+                  ::sleep(1);  // this gives time for child process to start execl
 
                   int chkOut = StatChk(pid, Wstat, id);
                   {
                      // hopefully, Wstat is set to 'pending'.
-                     const time_t Ctime = time(0);
+                     const time_t Ctime = std::time(0);
                      std::ostringstream SomeString;
                      SomeString << Ctime << '\t' << std::asctime( std::localtime(&Ctime) ) << std::endl
                                 << "TEST MESSAGE EQSTART-BeginProd: chkOut = " << chkOut 
@@ -474,7 +489,7 @@ WORKER(int id)
          if (!Printed1) {
             std::ostringstream Pstring;
             Pstring << "The results are ready\n Wstat is now active ";
-            const time_t Ctime = time(0);
+            const time_t Ctime = std::time(0);
             Pstring << Ctime << '\t' << std::asctime( std::localtime(&Ctime) ) << std::endl;
             PrintDebug(Pstring.str(), outlog, 5);
             Printed1 = true;
@@ -490,7 +505,7 @@ WORKER(int id)
          PrintDebug("succes on sending g_UNC", outlog, 9);
 
          if (std::abs(prev_g - g_VALUE) >= prev_g * 0.01 || std::abs(prev_u - g_UNC) >= prev_u * 0.01) {
-            const time_t Ctime = time(0);
+            const time_t Ctime = std::time(0);
             std::ostringstream SomeString;
             SomeString << "The value of objFxn has changed to: " << g_VALUE << " +- "
                        << g_UNC << " " << Ctime << '\t' << std::asctime( std::localtime(&Ctime) ) ;
@@ -516,7 +531,7 @@ WORKER(int id)
                    << "\nI have received message to FORCEFULLY quit. " << std::endl;
 
          done_prog = true;
-         kill(pid, SIGKILL);
+         ::kill(pid, SIGKILL);
 
          Wstat = error;
          // something went wrong... forcing exit
@@ -525,7 +540,7 @@ WORKER(int id)
       // Reporting time
 
       {
-         const time_t Ctime = time(0);
+         const time_t Ctime = std::time(0);
          std::ostringstream SomeString;
          SomeString << "sending status=" << Wstat
                     << " back to MASTER ";
@@ -537,7 +552,7 @@ WORKER(int id)
       PrintDebug("Done sending status", outlog, 9);
 
       if (PrevWsit != Wsit) {
-         const time_t Ctime = time(0);
+         const time_t Ctime = std::time(0);
          outlog << "=======================================\n"
                 << Ctime << '\t' << std::asctime( std::localtime(&Ctime) ) << std::endl
                 << "Wsit has changed. ";
@@ -553,7 +568,7 @@ WORKER(int id)
 
    // close the file if file is open
    if (outlog.is_open()) {
-      const time_t Ctime = time(0);
+      const time_t Ctime = std::time(0);
       outlog << "+++++++++++++++++++++++++++++++++++++++++++" << std::endl;
       outlog << "This is the final out put on process " << id << std::endl;
       outlog << "The while loop was performed " << temp_count << " times" << std::endl;

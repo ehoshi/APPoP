@@ -1,5 +1,20 @@
 #include "frame.h"
 
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <ctime>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <signal.h>
+#include <sstream>
+#include <string>
+#include <sys/wait.h>
+#include <unistd.h>
+
+#include <armadillo>
+
 
 // This function is function to print debug statements.
 // Dlevel is set and passed from the calling function, and is compared
@@ -13,10 +28,10 @@
 void
 PrintDebug(const std::string &StrToPrint, std::ofstream &outfile, const int Dlevel)
 {
-//   const time_t Ctime = time(0);
+//   const time_t Ctime = std::time(0);
    int SetL = 5;
    if (Dlevel <= SetL) {
-//      time_t jikan = time(NULL);
+//      time_t jikan = std::time(NULL);
       outfile << StrToPrint << ' ' << std::endl;
 //      outfile << std::asctime( std::localtime(&Ctime) ) << std::endl;
    }
@@ -32,7 +47,7 @@ GlobalPrintDebug(std::string StrToPrint, const int Dlevel)
 void
 printsimplex(const simplex &blob, std::ostream& SSt)
 {
-   const time_t Ctime = time(0);
+   const time_t Ctime = std::time(0);
    SSt << "\n===========Current g, g_UNC values, and status===========" << std::endl;
    for (int j = 0; j < blob.vertices; j++) {
       SSt << "vertex" << j << " on proc " << blob.vertex[j].ProcID
@@ -334,7 +349,7 @@ gcalc(double &grFinal, double &guFinal, WORKER_status &WStatus,
         && (std::abs(prev_g - grFinal) >= prev_g * 0.01
             || std::abs(prev_u - guFinal) >= prev_u * 0.01) ) {
 
-      const time_t Ctime = time(0);
+      const time_t Ctime = std::time(0);
 
       std::ostringstream terms;
 //      terms << "# LOOP grF guF gvalue unc gr1 gr2 gr3 gu1 gu2 gu3 E P D Eu Pu Du time" << std::endl;
@@ -604,7 +619,7 @@ StatChk(const pid_t pid, WORKER_status &Wstatus, const int Rank)
    pid_t ws;  // status checking variable
    int childExitStatus;
 
-   ws = waitpid(pid, &childExitStatus, WNOHANG);
+   ws = ::waitpid(pid, &childExitStatus, WNOHANG);
    if (-1 == ws && EINTR == errno) {
       std::cerr << "waitpid interrupted on proc " << Rank << '.' << std::endl;
    }
@@ -653,7 +668,7 @@ StatChk(const pid_t pid, WORKER_status &Wstatus, const int Rank)
       //failed to call or run waitpid
       GlobalPrintDebug("ERROR: failed to call or run waitpid", 1);
       std::cerr << "ERROR: failed to call or run waitpid on proc " << Rank << std::endl;
-      perror("waitpid");
+      std::perror("waitpid");
 
       Wstatus = error;
       return 5;
@@ -674,7 +689,7 @@ killJob(const pid_t cid)
    std::ostringstream Kstring;
    Kstring << "Testing from killJob fxn: the pid killed is: " << cid;
    GlobalPrintDebug(Kstring.str(), 5);
-   int killReturn = kill(cid, SIGTERM);
+   int killReturn = ::kill(cid, SIGTERM);
    // wait here for process cid to kill???
    if (-1 == killReturn) {
       if (ESRCH == errno) {
@@ -683,7 +698,7 @@ killJob(const pid_t cid)
       else if (EPERM == errno) {
          GlobalPrintDebug("no permission to send signal. Forcefully kill process", 1);
          // no permission to send signal. TODO forcfully kill process
-         kill(cid, SIGKILL);  // I don't think I really want to do this...
+         ::kill(cid, SIGKILL);  // I don't think I really want to do this...
       }
    }
 }
@@ -953,17 +968,17 @@ DoScript(std::string scriptStr){
    int SCPTstatus;
 
 //   SCPTparent = getpid();//parent pid
-   SCPTpid = vfork();  // child pid
+   SCPTpid = ::vfork();  // child pid
 
    if (SCPTpid < 0) {
       std::cout << "something is really wrong" << std::endl;
       return -1;
    }
    else if (SCPTpid == 0) {  // child process
-      execl(scriptStr.c_str(), "sh", (char *)0);
+      ::execl(scriptStr.c_str(), "sh", (char *)0);
       std::cout << "FRAME ERROR: failed at execl in DoScript" << std::endl;
-      perror("execl");
-      exit(1);
+      std::perror("execl");
+      std::exit(1);
    }
    else {
 /*
@@ -971,7 +986,7 @@ DoScript(std::string scriptStr){
       std::cout << "The pID of the parent process is " << parent << '\n' << std::endl;
       std::cout << "waiting for process - parent" << std::endl;
 */
-      waitpid(SCPTpid, &SCPTstatus, 0);
+      ::waitpid(SCPTpid, &SCPTstatus, 0);
    }
 
    return 0;

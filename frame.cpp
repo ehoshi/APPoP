@@ -1,6 +1,9 @@
-#include "frame.h"
+#include <csignal>
+#include <fstream>
+#include <iostream>
 
-#include <vector>
+#include <armadillo>
+#include <mpi.h>
 
 
 void MASTER(int, int, arma::mat);
@@ -15,7 +18,7 @@ extern "C" void
 sigStuff(int signo)
 {
    if (SIGCHLD == signo) {
-      signal(SIGCHLD, sigStuff);
+      std::signal(SIGCHLD, sigStuff);
    }
 }
 ////////////////////////////////////////////////////////////////////////
@@ -75,7 +78,7 @@ main(int argc, char *argv[])
    // that this handler below is breaking the MPI at some point or place.
    // To fix thsi issue, we need to come up with a plan to NOT use waitpid() on
    // the parent of the worker process.
-   if (signal(SIGCHLD, sigStuff) == SIG_ERR) {
+   if (std::signal(SIGCHLD, sigStuff) == SIG_ERR) {
       std::cerr << "CRAP, I DON'T EVEN KNOW WHAT TO DO ANYMORE" << std::endl;
    }
 

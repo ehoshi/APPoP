@@ -3,6 +3,15 @@
 //#define AUXDEBUG
 #include "frame.h"
 
+#include <ctime>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+
+#include <armadillo>
+#include <mpi.h>
+
 
 verbosity outputLevel;
 
@@ -246,7 +255,7 @@ MASTER(int id, int P, arma::mat inP)
          updateMWstat(Wtemp, Pnum, blob);
          if (DetectChangeWstat(blob, PREV_wstat, Pnum)) {
             std::ostringstream SCWstr;
-            const time_t Ctime = time(0);
+            const time_t Ctime = std::time(0);
             SCWstr << ' ' << __LINE__ << " Detected change in Wstat "
                    << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
             PrintDebug(SCWstr.str(), MASlog, 1);
@@ -348,7 +357,7 @@ MASTER(int id, int P, arma::mat inP)
          }
 
          if (quit == task) {
-            const time_t Ctime = time(0);
+            const time_t Ctime = std::time(0);
             MASlog << "\n\n===============the simplx has converged=====================\n" 
                    << "The final parameters are:\n";
 
@@ -382,7 +391,7 @@ MASTER(int id, int P, arma::mat inP)
          MASlog << "=====Vert swap or process starting/restarting" << std::endl;
          printsimplex(blob, MASlog);
          std::ostringstream SCWstr;
-         const time_t Ctime = time(0);
+         const time_t Ctime = std::time(0);
          SCWstr << ' ' << __LINE__ << " Printed above is before send/recv "
                 << "=========== "
                 << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
@@ -533,7 +542,7 @@ MASTER(int id, int P, arma::mat inP)
 
       if (DoIprint2) {
          std::ostringstream SCWstr;
-         const time_t Ctime = time(0);
+         const time_t Ctime = std::time(0);
          SCWstr << ' ' << __LINE__ << " Detected change in Wstat "
                 << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
          PrintDebug(SCWstr.str(), MASlog, 1);

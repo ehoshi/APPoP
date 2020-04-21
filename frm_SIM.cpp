@@ -6,6 +6,15 @@
 
 #include "frame.h"
 
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <ctime>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <string>
 
 
 // function used for std::sort. compares two vertex points
@@ -31,7 +40,7 @@ reflect(simplex *blob)
       GlobalPrintDebug("Order2 called reflect", 1);
       status = order2(blob, true);
       if (status < 0) {  // means some vertices do not have values yet
-         fprintf(stderr, "reflect: order returned %d", status);
+         std::fprintf(stderr, "reflect: order returned %d", status);
 //         exit(1);
       }
       getbase(blob);
@@ -66,7 +75,7 @@ extend(simplex *blob)
       GlobalPrintDebug("Order2 called extend", 1);
       status = order2(blob, true);
       if (status < 0) {  // means some vertices do not have values yet
-         fprintf(stderr, "extend: order returned %d", status);
+         std::fprintf(stderr, "extend: order returned %d", status);
 //         exit(1);
       }
       getbase(blob);
@@ -102,7 +111,7 @@ contract(simplex *blob)
       GlobalPrintDebug("Order2 called contract", 1);
       status = order2(blob, true);
       if (status < 0) {  // means some vertices do not have values yet
-         fprintf(stderr, "contract: order returned %d", status);
+         std::fprintf(stderr, "contract: order returned %d", status);
 //         exit(1);
       }
       getbase(blob);
@@ -138,7 +147,7 @@ collapse(simplex *blob)
       GlobalPrintDebug("Order2 called collapse", 1);
       status = order2(blob, true);
       if (status < 0) {  // means some vertices do not have values yet
-         fprintf(stderr, "collapse: order returned %d", status);
+         std::fprintf(stderr, "collapse: order returned %d", status);
 //         exit(1);
       }
       // we don't need the base here, but the protocol is to always
@@ -176,7 +185,7 @@ slide(point start, point target, double distance)
    point finish;
 
    if (start.dim != target.dim) {
-      fprintf(stderr, "slide: dimensionality of points do not match\n");
+      std::fprintf(stderr, "slide: dimensionality of points do not match\n");
 //      exit(1);
    }
    finish.dim = start.dim;
@@ -318,7 +327,7 @@ getbase(simplex *blob)
       GlobalPrintDebug("Order2 called getbase",1);
       status = order2(blob, true);
       if (status < 0) {
-         fprintf(stderr, "getbase: not all vertices have been evaluated.\n");
+         std::fprintf(stderr, "getbase: not all vertices have been evaluated.\n");
 //         exit(1);
       }
    }
@@ -356,7 +365,7 @@ write_vertex(point *here)
    char filename[50];
    std::ofstream statusfile;
 
-   sprintf(filename, ".simplex/vert%02d.trace", here->PointID);
+   std::sprintf(filename, ".simplex/vert%02d.trace", here->PointID);
    statusfile.open(filename, std::ios::app);
    statusfile << std::setiosflags(std::ios::fixed) << std::setprecision(6);
    statusfile << here->as_of.tv_sec + here->as_of.tv_usec / 1.e6 << " ";
@@ -462,7 +471,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
       // first, check to make sure we're not due to be euthanized
 
       if (blob->age >= old_age) {
-         const time_t Ctime = time(0);
+         const time_t Ctime = std::time(0);
          std::stringstream messString;
          messString << __FILE__ << ' ' << __LINE__ << "reached maximum "
                     << old_age << " generations: Quitting... "
@@ -497,7 +506,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
       // next, make sure we have VALID values at each vertex
       for (ivert = 0; ivert < blob->vertices; ++ivert) {
          if (blob->vertex[ivert].value < 0) {
-            const time_t Ctime = time(0);
+            const time_t Ctime = std::time(0);
             std::cout <<"FRAME  " << __FILE__ << ' ' << __LINE__
                       << "Proc " << blob->vertex[ivert].ProcID
                       << " -Vertex " << ivert
@@ -513,7 +522,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
          GlobalPrintDebug("Order2 called optimize",1);
          O_status = order2(blob, true);
          if (O_status < 0) {  // means status is undefined for some
-            const time_t Ctime = time(0);
+            const time_t Ctime = std::time(0);
             std::cerr << "optimize: order returned " << O_status << std::endl
                       << std::asctime( std::localtime(&Ctime) );
 //            exit(1)
@@ -526,17 +535,17 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
             for (jvert = ivert+1; jvert < blob->vertices; ++jvert) {
                distance = 0.;
                for (idim = 0; idim < blob->vertex[0].dim; ++idim) {
-                  distance += pow(blob->vertex[ivert].coord[idim]
+                  distance += std::pow(blob->vertex[ivert].coord[idim]
                                   - blob->vertex[jvert].coord[idim], 2.0);
                }
-               if (distance > pow(tolerance, 2.0)) {
+               if (distance > std::pow(tolerance, 2.0)) {
                   simplex_converged = false;
                }
             }
          }
          if (simplex_converged) {
             // shut down all simulations
-            const time_t Ctime = time(0);
+            const time_t Ctime = std::time(0);
             std::stringstream messString;
             messString << __FILE__ << ' ' << __LINE__ << " simplex converged! "
                        << std::asctime( std::localtime(&Ctime) );
@@ -552,7 +561,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
          printpoint("reflected", blob->aux[0]);
          *target = &blob->aux[0];
          if (undef == blob->aux[0].status || done == blob->aux[0].status) {
-            const time_t Ctime = time(0);
+            const time_t Ctime = std::time(0);
             std::stringstream messString;
             messString << __FILE__ << ' ' << __LINE__ << " initiated Refletion "
                        << std::asctime( std::localtime(&Ctime) );
@@ -561,7 +570,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
             return initiate;
          }
          else {  // something is already running in the reflection slot
-            const time_t Ctime = time(0);
+            const time_t Ctime = std::time(0);
             std::stringstream messString;
             messString << __FILE__ << ' ' << __LINE__ << " REinitiated Refletion "
                        << std::asctime( std::localtime(&Ctime) );
@@ -584,13 +593,13 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
 
       // but we can't do anything until we have a value for the reflection
       if (pending == blob->aux[0].status) {
-         const time_t Ctime = time(0);
+         const time_t Ctime = std::time(0);
          std::cout << "FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
                    << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
          return simplex_wait;
       }
       if (blob->aux[0].value < 0) {  //ensure the valid value on aux[0] before anything
-         const time_t Ctime = time(0);
+         const time_t Ctime = std::time(0);
          std::cout << "FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
                    << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
          return simplex_wait;
@@ -628,7 +637,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
                    << blob->vertex[blob->sechigh].error << ' '
                    << " ?< " << blob->vertex[blob->highest].value << " +/- "
                    << blob->vertex[blob->highest].error << ' ';
-         const time_t Ctime = time(0);
+         const time_t Ctime = std::time(0);
          std::cout << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
          return simplex_wait;
       }
@@ -663,7 +672,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
          // XXX if any of chk returns 0, wait
          /*
            if(chk2 == 0 || chk3 ==0 || chk4 == 0){
-           const time_t Ctime = time(0);
+           const time_t Ctime = std::time(0);
            std::cout << "FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
            << "chk2 = " << chk2 << " : chk3 = " << chk3 << " : chk4 = " << chk4
            << ' ' << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
@@ -673,7 +682,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
 
          //XXX DEBUG VERSION of above
          if (0 == chk2) {
-            const time_t Ctime = time(0);
+            const time_t Ctime = std::time(0);
             std::cout << "FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait -- "
                       << "chk2 == 0 : " << blob->vertex[blob->sechigh].value << " +/- " << blob->vertex[blob->sechigh].error
                       << " <? " << blob->vertex[i].value << " +/- " << blob->vertex[i].error
@@ -681,7 +690,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
             return simplex_wait;
          }
          if (0 == chk3) {
-            const time_t Ctime = time(0);
+            const time_t Ctime = std::time(0);
             std::cout << "FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait -- "
                       << "chk3 == 0 : " << blob->vertex[blob->lowest].value << " +/- " << blob->vertex[blob->lowest].error
                       << " >? " << blob->vertex[i].value << " +/- " << blob->vertex[i].error
@@ -689,7 +698,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
             return simplex_wait;
          }
          if (0 == chk4) {
-            const time_t Ctime = time(0);
+            const time_t Ctime = std::time(0);
             std::cout << "FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait -- "
                       << "chk4 == 0 : " << blob->vertex[blob->highest].value << " +/- " << blob->vertex[blob->highest].error
                       << " <? " << blob->vertex[i].value << " +/- " << blob->vertex[i].error
@@ -714,7 +723,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
          }
          resetRound(*blob);
 
-         const time_t Ctime = time(0);
+         const time_t Ctime = std::time(0);
          std::cout << "FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
                    << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
          return simplex_wait;
@@ -731,7 +740,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
 
       if (-1 == chk2 || -1 == chk3 || -1 == chk4) {
          std::cout << "FRAME SIM ERROR: MOOSE" << std::endl;
-         const time_t Ctime = time(0);
+         const time_t Ctime = std::time(0);
          std::cout << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
          // no actioin yet
       }
@@ -749,7 +758,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
          swapPoint(*blob, blob->highest, 0);
          resetRound(*blob);
 
-         const time_t Ctime = time(0);
+         const time_t Ctime = std::time(0);
          std::cout << "FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
                    << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
          return simplex_wait;
@@ -789,14 +798,14 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
 
          // wait for a value, if needed
          if (pending == blob->aux[1].status) {
-            const time_t Ctime = time(0);
+            const time_t Ctime = std::time(0);
             std::cout <<"FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
                       << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
             return simplex_wait;
          }
 
          if (blob->aux[1].value < 0) {
-            const time_t Ctime = time(0);
+            const time_t Ctime = std::time(0);
             std::cout <<"FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
                       << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
             return simplex_wait;
@@ -809,7 +818,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
             SIMPswap = true;  // tells calling fxn that simplex has moved
             swapPoint(*blob, blob->highest, 1);
             resetRound(*blob);
-            const time_t Ctime = time(0);
+            const time_t Ctime = std::time(0);
             std::cout << "FRAME  " << __FILE__ << ' ' << __LINE__ << " simplex wait "
                       << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
             return simplex_wait;
@@ -820,13 +829,13 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
             SIMPswap = true;  // tells calling fxn that simplex has moved
             swapPoint(*blob, blob->highest, 0);
             resetRound(*blob);
-            const time_t Ctime = time(0);
+            const time_t Ctime = std::time(0);
             std::cout << "FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
                       << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
             return simplex_wait;
          }
          else {  // maybe branch
-            const time_t Ctime = time(0);
+            const time_t Ctime = std::time(0);
             std::cout << "FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
                       << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
             return simplex_wait;
@@ -860,7 +869,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
 
          // but we may have to wait for a value
          if (pending == blob->aux[1].status) {
-            const time_t Ctime = time(0);
+            const time_t Ctime = std::time(0);
             std::stringstream messString;
             messString <<"FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
                        << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
@@ -869,7 +878,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
          }
          // but we may have to wait for a VALID value
          if (blob->aux[1].value < 0) {
-            const time_t Ctime = time(0);
+            const time_t Ctime = std::time(0);
             std::cout <<"FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
                       << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
             return simplex_wait;
@@ -879,7 +888,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
          int OOI = compare(blob->aux[1], blob->aux[0]);
          int OOT = compare(blob->aux[1], blob->vertex[blob->highest]);
          if (0 == OOI || 0 == OOT) {
-            const time_t Ctime = time(0);
+            const time_t Ctime = std::time(0);
             std::cout << "FRAME  " << __FILE__ << ' ' << __LINE__ << " simplex wait "
                       << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
             std::stringstream whatever;
@@ -897,7 +906,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
             SIMPswap = true;//tells calling fxn that simplex has moved
             swapPoint(*blob, blob->highest, 1);
             resetRound(*blob);
-            const time_t Ctime = time(0);
+            const time_t Ctime = std::time(0);
             std::cout << "FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
                       << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
             return simplex_wait;
@@ -952,14 +961,14 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
 
          // but we may have to wait for a value
          if (pending == blob->aux[1].status) {
-            const time_t Ctime = time(0);
+            const time_t Ctime = std::time(0);
             std::cout <<"FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
                       << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
             return simplex_wait;
          }
          // but we may have to wait for a VALID value
          if (blob->aux[1].value < 0) {
-            const time_t Ctime = time(0);
+            const time_t Ctime = std::time(0);
             std::cout <<"FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
                       << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
             return simplex_wait;
@@ -968,7 +977,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
          int OOI = compare(blob->aux[1], blob->aux[0]);
          if (0 == OOI) {
             // error bar is overlapping
-            const time_t Ctime = time(0);
+            const time_t Ctime = std::time(0);
             std::cout <<"FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
                       << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
             std::stringstream whatever;
@@ -997,7 +1006,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
             swapPoint(*blob, blob->highest, 1);
             resetRound(*blob);
 
-            const time_t Ctime = time(0);
+            const time_t Ctime = std::time(0);
             std::cout << "FRAME  " << __FILE__ << ' ' << __LINE__ << " simplex wait "
                       << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
             return simplex_wait;
@@ -1014,14 +1023,14 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
          }
       }
       else {  // other cases-probably overlapping. So wait.
-         const time_t Ctime = time(0);
+         const time_t Ctime = std::time(0);
          std::cout << "FRAME  " << __FILE__ << ' ' << __LINE__ << " simplex wait "
                    << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
          return simplex_wait;
       }
    }  // while(1)
 
-   const time_t Ctime = time(0);
+   const time_t Ctime = std::time(0);
    std::cout << "FRAME  " << __FILE__ << ' ' << __LINE__ << " simplex wait "
              << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
    return simplex_wait;
