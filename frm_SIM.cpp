@@ -368,7 +368,6 @@ write_vertex(point *here)
    std::sprintf(filename, ".simplex/vert%02d.trace", here->PointID);
    statusfile.open(filename, std::ios::app);
    statusfile << std::setiosflags(std::ios::fixed) << std::setprecision(6);
-   statusfile << here->as_of.tv_sec + here->as_of.tv_usec / 1.e6 << " ";
    statusfile << here->value << " ";
    statusfile << here->error << std::endl;
    statusfile.close();

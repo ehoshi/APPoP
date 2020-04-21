@@ -87,8 +87,6 @@ enum Point_kind {verte, auxil};
    Ptype = point type. Either 0 = normal vertex, 1 = aux vertex.
    status = status of that worker (point)
    ComEx = Command to be Excuted. Place to store Mcomm.
-   birthday = time that point was initiated
-   as_of = time at which the value was evaluated
 */
 struct point
 {
@@ -104,8 +102,6 @@ struct point
    Point_kind Pkind;
    WORKER_status status;
    MASTER_comand ComEx;
-   timeval birthday;
-   timeval as_of;
 };
 
 /*
