@@ -51,24 +51,10 @@ WORKER(int id)
    pid_t pid = 0; //  child pid
 
    // declare the stringstream used for reading/making/checking the files
-   std::ostringstream sysstr3;  // making script executable
-   std::ostringstream sysstr6;  // making directory
-   std::ostringstream sysstr7;  // changing working directory
-   std::ostringstream readFstr;
-
-   // string for prepareing and running the simulation/script
-   // sed command
-   sysstr3  << "chmod u+x rscript" << id << ".sh";
+   std::ostringstream sysstr6;  // process directory
 
    // string for creating directory and moving the working directory (only applies to workers)
    sysstr6 << "Process" << id;
-   sysstr7 << "Process" << id;
-
-   // naming input and output files
-   readFstr << "var.txt";
-
-   // declare files
-   std::ifstream infileV( readFstr.str().c_str() );
 
    // make new directory
    int chkSys6 = mkdir(sysstr6.str().c_str(), 0777);
@@ -80,7 +66,7 @@ WORKER(int id)
    }
    else {
       // change the working directory
-      int chkCHDIR = ::chdir(sysstr7.str().c_str());
+      int chkCHDIR = ::chdir(sysstr6.str().c_str());
       if (-1 == chkCHDIR) {
          std::cout << "FRAME ERROR: cannot change directory by processor" << id <<'\n'
                    << "--" << std::strerror(errno) << std::endl;

@@ -25,7 +25,6 @@ MASTER(int id, int P, arma::mat inP)
    assert(inP.n_rows < std::numeric_limits<int>::max());
    assert(inP.n_cols < std::numeric_limits<int>::max());
 
-   int PointID_count = 0;
    bool done_prog = false;
    double g_VALUE = 0.0;
    double g_UNC = 0.0;
@@ -44,7 +43,6 @@ MASTER(int id, int P, arma::mat inP)
    point *target = 0;  // target siimplex point of action
    simplex blob;  // where simplex info is
    enum simplex_action task = nothingyet;
-   std::stringstream message;
    outputLevel = optimization;
 //   outputLevel = debug;
    blob.sort_status = stale;
@@ -313,7 +311,6 @@ MASTER(int id, int P, arma::mat inP)
          }
 
          if (restart == task) {
-            ++PointID_count;
             target->ComEx = reinitiate;
 //            target->status = pending;
             std::ostringstream Mstring;

@@ -174,37 +174,6 @@ enum verbosity { optimization = 1, vertex = 2, simplexStatus = 3,
 enum WRK_situation {NoStart, EqStart, ProdStart, ProdAvail, ProdFin};
 
 
-#if 0
-std::ostream& operator<<(std::ostream& os, const point& p)
-{
-   for (int i = 0; i < p.dim; ++i) {
-      os << p.coord[i] << std::endl;
-   }
-
-   return os;
-}
-
-std::ostream& operator<<(std::ostream& os, const simplex& s)
-{
-   using std::endl;
-
-   for (int i = 0; i < s.vertices; ++i) {
-      os << "The coord of vertex" << i << ": \n";
-      for (int j = 0; j < s.vertex[i].dim; j++) {
-         os << s.vertex[i].coord[j] << "\t";
-      }
-      os << endl;
-   }
-
-   os << "number of vertices: " << s.vertices << endl;
-   os << "vert with lowest value: " << s.lowest << endl;
-   os << "vert with highest value: " << s.highest << endl;
-
-   return os;
-}
-#endif
-
-
 /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
      LIST OF FUNCTIONS USED SOMEWHERE IN THE PROGRAM
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/

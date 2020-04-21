@@ -63,14 +63,12 @@ reflect(simplex *blob)
 void
 extend(simplex *blob)
 {
-   int idim, status;
-
    // no one should call extend() without knowing which point is worst,
    // and where the base is, but we'd better be sure
    if (stale == blob->sort_status) {
       //XXX
       GlobalPrintDebug("Order2 called extend", 1);
-      status = order2(blob, true);
+      int status = order2(blob, true);
       if (status < 0) {  // means some vertices do not have values yet
          std::fprintf(stderr, "extend: order returned %d", status);
 //         exit(1);
@@ -80,7 +78,7 @@ extend(simplex *blob)
 
    blob->aux[1].dim = blob->vertex[blob->highest].dim;  // just in case
 
-   for (idim = 0; idim < blob->aux[1].dim; ++idim) {
+   for (int idim = 0; idim < blob->aux[1].dim; ++idim) {
       blob->aux[1].coord[idim] = blob->vertex[blob->highest].coord[idim]
          + 3.0 * (blob->base[idim] - blob->vertex[blob->highest].coord[idim]);
    }
@@ -96,14 +94,12 @@ extend(simplex *blob)
 void
 contract(simplex *blob)
 {
-   int idim, status;
-
    // no one should call contract() without knowing which point is worst,
    // and where the base is, but we'd better be sure
    if (stale == blob->sort_status) {
       //XXX
       GlobalPrintDebug("Order2 called contract", 1);
-      status = order2(blob, true);
+      int status = order2(blob, true);
       if (status < 0) {  // means some vertices do not have values yet
          std::fprintf(stderr, "contract: order returned %d", status);
 //         exit(1);
@@ -113,7 +109,7 @@ contract(simplex *blob)
 
    blob->aux[1].dim = blob->vertex[blob->highest].dim;  // just in case
 
-   for (idim = 0; idim < blob->aux[1].dim; ++idim) {
+   for (int idim = 0; idim < blob->aux[1].dim; ++idim) {
       blob->aux[1].coord[idim] = blob->vertex[blob->highest].coord[idim]
          + 0.5 * (blob->base[idim] - blob->vertex[blob->highest].coord[idim]);  // XXX original value = 0.5 new = 0.8
    }
@@ -129,14 +125,12 @@ contract(simplex *blob)
 void
 collapse(simplex *blob)
 {
-   int idim, ivert, status;
-
    // no one should call collapse() without knowing which point is best,
    // but we'd better be sure
    if (stale == blob->sort_status) {
       //XXX
       GlobalPrintDebug("Order2 called collapse", 1);
-      status = order2(blob, true);
+      int status = order2(blob, true);
       if (status < 0) {  // means some vertices do not have values yet
          std::fprintf(stderr, "collapse: order returned %d", status);
 //         exit(1);
@@ -147,9 +141,9 @@ collapse(simplex *blob)
       getbase(blob);
    }
 
-   for (ivert = 0; ivert < blob->vertices; ++ivert) {
+   for (int ivert = 0; ivert < blob->vertices; ++ivert) {
       if (ivert != blob->lowest) {
-         for (idim = 0; idim < blob->vertex[ivert].dim; ++idim) {
+         for (int idim = 0; idim < blob->vertex[ivert].dim; ++idim) {
             blob->vertex[ivert].coord[idim] = blob->vertex[ivert].coord[idim]
                + 0.5 * (blob->vertex[blob->lowest].coord[idim]  //XXX original value = 0.5 new = 0.8
                         - blob->vertex[ivert].coord[idim]);
@@ -172,7 +166,6 @@ collapse(simplex *blob)
 point
 slide(point start, point target, double distance)
 {
-   int idim;
    point finish;
 
    if (start.dim != target.dim) {
@@ -181,7 +174,7 @@ slide(point start, point target, double distance)
    }
    finish.dim = start.dim;
 
-   for (idim = 0; idim < finish.dim; ++idim) {
+   for (int idim = 0; idim < finish.dim; ++idim) {
       finish.coord[idim] = start.coord[idim]
          + distance * (target.coord[idim] - start.coord[idim]);
    }
@@ -204,10 +197,7 @@ slide(point start, point target, double distance)
 int
 order1(simplex *blob)
 {
-   int ivert;
-   double high, low, sechigh;
-
-   for (ivert = 0; ivert < blob->vertices; ++ivert) {
+   for (int ivert = 0; ivert < blob->vertices; ++ivert) {
       if (undef == blob->vertex[ivert].status) {
          return -1;
       }
@@ -215,8 +205,8 @@ order1(simplex *blob)
    // look for lowest value
 
    blob->lowest = 0;
-   low = blob->vertex[blob->lowest].value;
-   for (ivert = 1; ivert < blob->vertices; ++ivert) {
+   double low = blob->vertex[blob->lowest].value;
+   for (int ivert = 1; ivert < blob->vertices; ++ivert) {
       if (blob->vertex[ivert].value < low) {
          blob->lowest = ivert;
          low = blob->vertex[blob->lowest].value;
@@ -226,8 +216,8 @@ order1(simplex *blob)
    // look for highest value
 
    blob->highest = 0;
-   high = blob->vertex[blob->highest].value;
-   for (ivert = 1; ivert < blob->vertices; ++ivert) {
+   double high = blob->vertex[blob->highest].value;
+   for (int ivert = 1; ivert < blob->vertices; ++ivert) {
       if (blob->vertex[ivert].value > high) {
          blob->highest = ivert;
          high = blob->vertex[blob->highest].value;
@@ -237,8 +227,8 @@ order1(simplex *blob)
    // look for second-highest value
 
    blob->sechigh = blob->highest == 0 ? 1 : 0;
-   sechigh = blob->vertex[blob->sechigh].value;
-   for (ivert = blob->sechigh + 1; ivert < blob->vertices; ++ivert) {
+   double sechigh = blob->vertex[blob->sechigh].value;
+   for (int ivert = blob->sechigh + 1; ivert < blob->vertices; ++ivert) {
       if (blob->vertex[ivert].value > sechigh && ivert != blob->highest) {
          blob->sechigh = ivert;
          sechigh = blob->vertex[blob->sechigh].value;
@@ -310,28 +300,25 @@ order2(simplex *blob, bool reset)
 void
 getbase(simplex *blob)
 {
-   int idim, ivert, status;
-   std::stringstream message;
-
    if (blob->sort_status != current) {
       //XXX
       GlobalPrintDebug("Order2 called getbase",1);
-      status = order2(blob, true);
+      int status = order2(blob, true);
       if (status < 0) {
          std::fprintf(stderr, "getbase: not all vertices have been evaluated.\n");
 //         exit(1);
       }
    }
 
-   for (idim = 0; idim < blob->vertex[0].dim; ++idim) {
+   for (int idim = 0; idim < blob->vertex[0].dim; ++idim) {
       blob->base[idim] = 0.0;
    }
 
    // sum all of the points except the worst
 
-   for (ivert = 0; ivert < blob->vertices; ++ivert) {
+   for (int ivert = 0; ivert < blob->vertices; ++ivert) {
       if (ivert != blob->highest) {
-         for (idim = 0; idim < blob->vertex[ivert].dim; ++idim) {
+         for (int idim = 0; idim < blob->vertex[ivert].dim; ++idim) {
             blob->base[idim] += blob->vertex[ivert].coord[idim];
          }
       }
@@ -339,29 +326,13 @@ getbase(simplex *blob)
 
    // and divide by the number of vertices summed
 
-   message << "base is at ";
-   for (idim = 0; idim < blob->vertex[0].dim; ++idim) {
+   std::ostringstream message("base is at ");
+   for (int idim = 0; idim < blob->vertex[0].dim; ++idim) {
       blob->base[idim] /= (blob->vertices - 1);
       message << blob->base[idim] << " ";
    }
    message << std::endl;
    report(message.str(), simplexStatus);
-}
-
-// write_vertex writes out the current state of the vertex passed as
-// an argument
-void
-write_vertex(point *here)
-{
-   char filename[50];
-   std::ofstream statusfile;
-
-   std::sprintf(filename, ".simplex/vert%02d.trace", here->PointID);
-   statusfile.open(filename, std::ios::app);
-   statusfile << std::setiosflags(std::ios::fixed) << std::setprecision(6);
-   statusfile << here->value << " ";
-   statusfile << here->error << std::endl;
-   statusfile.close();
 }
 
 void
@@ -371,12 +342,6 @@ report(std::string message, verbosity level)
    if (level <= outputLevel) {
       std::cout << message;
    }
-}
-
-void
-printpoint(std::string, point)
-{
-  //XXX removed
 }
 
 int
@@ -450,13 +415,6 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
    // or when the simplex has made this many moves
    const int old_age = 10000;
 
-   // variables used
-   bool simplex_converged;
-   double distance;
-   int idim, ivert, jvert, O_status;
-   point temp;
-   std::stringstream message;
-
    while (1) {  // we'll come back here after vertex replacements
       // first, check to make sure we're not due to be euthanized
 
@@ -473,7 +431,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
 
       // first, check to make sure evaluation has begun at all vertices
 
-      for (ivert = 0; ivert < blob->vertices; ++ivert) {
+      for (int ivert = 0; ivert < blob->vertices; ++ivert) {
          if (undef == blob->vertex[ivert].status) {
             *target = &blob->vertex[ivert];
             std::stringstream messString;
@@ -485,7 +443,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
       }
 
       // next, make sure we have values at each vertex
-      for (ivert = 0; ivert < blob->vertices; ++ivert) {
+      for (int ivert = 0; ivert < blob->vertices; ++ivert) {
          if (pending == blob->vertex[ivert].status) {
 //            std::cout <<"FRAME  "  << __FILE__ << ' ' << __LINE__ << "vertex " 
 //                      << ivert << " is pending" << std::endl;
@@ -494,7 +452,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
       }
 
       // next, make sure we have VALID values at each vertex
-      for (ivert = 0; ivert < blob->vertices; ++ivert) {
+      for (int ivert = 0; ivert < blob->vertices; ++ivert) {
          if (blob->vertex[ivert].value < 0) {
             const time_t Ctime = std::time(0);
             std::cout <<"FRAME  " << __FILE__ << ' ' << __LINE__
@@ -510,7 +468,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
       if (stale == blob->sort_status) {
          //XXX
          GlobalPrintDebug("Order2 called optimize",1);
-         O_status = order2(blob, true);
+         int O_status = order2(blob, true);
          if (O_status < 0) {  // means status is undefined for some
             const time_t Ctime = std::time(0);
             std::cerr << "optimize: order returned " << O_status << std::endl
@@ -520,11 +478,11 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
          }
 //	 std::cerr << "should have checked whether order changed, but didn't" << std::endl;
          // are we done yet?
-         simplex_converged = true;
-         for (ivert = 0; ivert < blob->vertices; ++ivert) {
-            for (jvert = ivert+1; jvert < blob->vertices; ++jvert) {
-               distance = 0.;
-               for (idim = 0; idim < blob->vertex[0].dim; ++idim) {
+         bool simplex_converged = true;
+         for (int ivert = 0; ivert < blob->vertices; ++ivert) {
+            for (int jvert = ivert+1; jvert < blob->vertices; ++jvert) {
+               double distance = 0.;
+               for (int idim = 0; idim < blob->vertex[0].dim; ++idim) {
                   distance += std::pow(blob->vertex[ivert].coord[idim]
                                   - blob->vertex[jvert].coord[idim], 2.0);
                }
@@ -548,7 +506,6 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
          // calculate the reflected point
          reflect(blob);
          blob->reflect_status = current;
-         printpoint("reflected", blob->aux[0]);
          *target = &blob->aux[0];
          if (undef == blob->aux[0].status || done == blob->aux[0].status) {
             const time_t Ctime = std::time(0);
@@ -763,7 +720,6 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
          // start a calculation of the extended point, if needed
          if (blob->aux_holds != extension) {
             extend(blob);
-            printpoint("extension", blob->aux[1]);
             *target = &blob->aux[1];
             if (undef == blob->aux[1].status || done == blob->aux[0].status) {
                std::stringstream messString;
@@ -918,7 +874,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
          if (blob->aux_holds != contraction) {
             GlobalPrintDebug("Half-step in contraction", 5);
             // swap highest and R for breif moment while contraction point is calculated
-            temp = blob->vertex[blob->highest];
+            point temp = blob->vertex[blob->highest];
             blob->vertex[blob->highest] = blob->aux[0];
             // Now find contracted point
             contract(blob);
