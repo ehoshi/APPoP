@@ -36,11 +36,11 @@ void MASTER(int id, int P, arma::mat inP)
    blob.age = 0;
 
 //initialize simplex
-   blob.vertices = inP.n_rows;
+   blob.vertices = static_cast<int>(inP.n_rows);
    std::cout << "FRAME: This is blob.vertex: " << blob.vertices << std::endl;
    
    for (int ivert = 0; ivert < blob.vertices; ++ivert){
-      blob.vertex[ivert].dim = inP.n_cols;
+      blob.vertex[ivert].dim = static_cast<int>(inP.n_cols);
       blob.vertex[ivert].value = -1.0;
       blob.vertex[ivert].error = -1.0;
       blob.vertex[ivert].status = undef;
@@ -60,7 +60,7 @@ void MASTER(int id, int P, arma::mat inP)
       for(arma::uword j = 0; j < inP.n_cols; j++){
          blob.aux[ivert].coord[j] = 0;
       }
-      blob.aux[ivert].dim = inP.n_cols;
+      blob.aux[ivert].dim = static_cast<int>(inP.n_cols);
       blob.aux[ivert].value = -1.0;
       blob.aux[ivert].error = -1.0;
       blob.aux[ivert].status = undef;
@@ -89,7 +89,7 @@ void MASTER(int id, int P, arma::mat inP)
    //Send initial start signal, size of the dimension, and
    //actual parameters to each worker processors
    //note: dimension is only sent once to all processors including aux.
-   int temp_dim = inP.n_cols;
+   int temp_dim = static_cast<int>(inP.n_cols);
    for (int i = 0; i < P-1; i++){
       std::ostringstream Mstring;
       Mstring    << "MASTER = proc" << id <<  ": dimension "
@@ -114,7 +114,7 @@ void MASTER(int id, int P, arma::mat inP)
       MPI_Send(&Mcomm, 1, MPI_INT, blob.vertex[i].ProcID, 1, MPI_COMM_WORLD);
       PrintDebug("Done sending above", MASlog, 9); 
  
-      tempvec = inP.row(i).t();
+      tempvec = inP.row(static_cast<arma::uword>(i)).t();
 
       PrintDebug("Now sending coordinates", MASlog, 9); 
       MPI_Send(tempvec.memptr(), temp_dim, MPI_DOUBLE, blob.vertex[i].ProcID, 2, MPI_COMM_WORLD);//[A2]
@@ -470,7 +470,7 @@ void MASTER(int id, int P, arma::mat inP)
 		PrintDebug(Mstring.str(), MASlog, 7); 
 	     }
 	     //send starting parameter
-             arma::vec tempvec(temp_dim);
+             arma::vec tempvec(static_cast<arma::uword>(temp_dim));
 	     SetVec(tempvec, temp_dim, Pj, blob);
 	
 	     {  std::ostringstream Mstring;

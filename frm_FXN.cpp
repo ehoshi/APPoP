@@ -897,7 +897,7 @@ void SetVec(arma::vec &Tvec, const int dim, const int CPN, const simplex blob)
    for(int i = 0; i < blob.vertices; i++ ){
       if(blob.vertex[i].ProcID == CPN){
          for(int j = 0; j < dim; j++){
-            Tvec(j) = blob.vertex[i].coord[j];
+            Tvec(static_cast<arma::uword>(j)) = blob.vertex[i].coord[j];
          }
 	 return;
       }
@@ -906,7 +906,7 @@ void SetVec(arma::vec &Tvec, const int dim, const int CPN, const simplex blob)
    for(int i = 0; i < MAXAUX; i++ ){
       if(blob.aux[i].ProcID == CPN){
          for(int j = 0; j < dim; j++){
-            Tvec(j) = blob.aux[i].coord[j];
+            Tvec(static_cast<arma::uword>(j)) = blob.aux[i].coord[j];
          }
 	 return;
       }

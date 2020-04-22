@@ -212,7 +212,7 @@ void WORKER(int id)
 
 
         //declare the vector for coordinate and recieve the coordinate.
-        arma::vec coordinate(dimension);
+        arma::vec coordinate(static_cast<arma::uword>(dimension));
 
         MPI_Recv(coordinate.memptr(), dimension, MPI_DOUBLE, 
                  0, MPI_ANY_TAG, MPI_COMM_WORLD, &StatMPI);
