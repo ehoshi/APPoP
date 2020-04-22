@@ -12,7 +12,7 @@ add_executable(frame
   frm_SIM.cpp
   frm_WRK.cpp)
 target_compile_options(frame PRIVATE
-  $<$<CXX_COMPILER_ID:GNU>:
+  $<$<OR:$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:
   -Wall -pedantic-errors -Wextra -Wconversion -Wsign-conversion>)
 target_include_directories(frame SYSTEM PRIVATE ${ARMADILLO_INCLUDE_DIRS})
 target_link_libraries(frame
