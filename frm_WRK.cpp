@@ -81,7 +81,7 @@ void WORKER(int id)
         }
         else
         {
-           int chkcpy = system( "cp ../tempfiles/* ." );
+           int chkcpy = system( "cp ../runfiles/* ." );
            if(chkcpy == -1)
            {
 	      std::cout << "FRAME ERROR: cannot copy templates by processor" << id << std::endl;
