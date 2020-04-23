@@ -4,12 +4,14 @@
 #include "frame.h"
 
 #include <cassert>
+#include <chrono>
 #include <ctime>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <limits>
 #include <sstream>
+#include <thread>
 
 #include <armadillo>
 #include <mpi.h>
@@ -553,6 +555,9 @@ MASTER(int id, int P, arma::mat inP)
          printsimplex(blob, MASlog);
          DoIprint2 = false;
       }
+
+      // don't use 100% CPU in a busy loop
+      std::this_thread::sleep_for(std::chrono::seconds(1));
    }  // end while
 
    PrintDebug("Closing file...", MASlog, 5);
