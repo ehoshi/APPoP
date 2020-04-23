@@ -978,7 +978,7 @@ DoScript(std::string scriptStr){
       ::execl(scriptStr.c_str(), "sh", (char *)0);
       std::cout << "FRAME ERROR: failed at execl in DoScript" << std::endl;
       std::perror("execl");
-      std::exit(1);
+      ::_exit(1);
    }
    else {
 /*
