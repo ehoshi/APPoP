@@ -11,6 +11,7 @@
 #include <iostream>
 #include <signal.h>
 #include <sstream>
+#include <string>
 #include <sys/errno.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -18,6 +19,42 @@
 #include <armadillo>
 #include <mpi.h>
 
+
+/*! \brief Launch a script in the background and return its pid.
+ *
+ * The script must be located in the current directory and its path
+ * will be formed by appending ".sh" to the end of \a name. The script
+ * will be started with `argv[] = {name}`.
+ *
+ * \param name the name of the script to launch.
+ * \return the process id of the launched script or -1 on error.
+ */
+static pid_t
+LaunchScript(std::string name)
+{
+   //TODO remove when switching to spdlog, possibly by adding a custom
+   // logging format that automatically adds the rank id to all
+   // messages
+   int rank = -1;
+   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+   pid_t pid = ::vfork();
+   if (!pid) {  // child process
+      std::cout << "\nFRAME: This is child process on process " << rank << ".\n"
+                << "About to start " << name << std::endl;
+
+      std::string path = "./"+name+".sh";
+      int chkEXC1 = ::execl(path.c_str(), name.c_str(), reinterpret_cast<char*>(0));
+      if (-1 == chkEXC1) {
+         std::cout << "FRAME ERROR: failed at execl (child) by proc " << rank << std::endl;
+         std::perror("execl");
+         ::_exit(1);
+      }
+      assert(false);  // should never be reached
+   }
+
+   return pid;
+}
 
 void
 WORKER(int id)
@@ -261,27 +298,12 @@ WORKER(int id)
 
             // fork the process. Since fork causes a mess using MPI, vfork is used
             parent = ::getpid();  // parent pid
-            pid = ::vfork();  // child pid
+            pid = LaunchScript("eqi");
 
             if (pid < 0){
                outlog << "ERROR: failed to fork by process " << id << std::endl;
                std::perror("fork");
                Wstat = error;
-            }
-            /*
-              child process
-              the child runs exec -> the external program or process takes over the control
-              if execl fails, the child process terminates
-            */
-            else if (0 == pid) {
-               std::cout << "\nFRAME: This is child process on process " << id << "." << std::endl;
-               int chkEXC1 = ::execl("./eqi.sh", "eqi", (char *)0);
-               if (-1 == chkEXC1) {
-                  std::cout << "FRAME ERROR: failed at execl (child) by proc " << id << std::endl;
-                  std::perror("execl");
-                  std::exit(1);
-               }
-               std::cout << "FRAME: This should not print upon success" << std::endl;
             }
             /*
               parent process
@@ -347,24 +369,12 @@ WORKER(int id)
                outlog << "-- starting production... " << std::endl;
 
                parent = ::getpid();  // parent pid
-               pid = ::vfork();  // child pid
+               pid = LaunchScript("prod");
 
                if (pid < 0) {
                   outlog << "ERROR: failed to fork by process " << id << std::endl;
                   std::perror("fork");
                   Wstat = error;
-               }
-               else if (pid == 0) {  // child process
-                  std::cout << "\nFRAME: This is child process on process " << id << ".\n" 
-                            << "About to start production" << std::endl;
-
-                  int chkEXC2 = ::execl("./prod.sh", "prod", (char *)0);
-                  if (-1 == chkEXC2) {
-                     std::cout << "FRAME ERROR: failed at execl (child) by proc " << id << std::endl;
-                     std::perror("execl");
-                     std::exit(1);
-                  }
-                  std::cout << "FRAME: This should not print upon success" << std::endl;
                }
                else {  // parent process 
                   std::ostringstream Pstring;
