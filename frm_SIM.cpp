@@ -382,15 +382,17 @@ void printpoint(std::string, point)
 
 int compare(point PntA, point PntB){
 //XXX XXX CURRENTLY DEBUG MODE XXX XXX XXX
+//
+  double MULT = 0.1;
    //A > B w/o overlapping
-//  if(PntA.value - PntA.error > PntB.value + PntB.error){
-   if(PntA.value > PntB.value){
+  if(PntA.value - MULT*PntA.error > PntB.value + MULT*PntB.error){
+//   if(PntA.value > PntB.value){
       return 1;
    }
 
    //A < B w/o overlapping
-//   if(PntA.value + PntA.error < PntB.value - PntB.error){
-   if(PntA.value < PntB.value){
+   if(PntA.value + MULT*PntA.error < PntB.value - MULT*PntB.error){
+//   if(PntA.value < PntB.value){
       return 2;
    }
 
