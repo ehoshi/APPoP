@@ -133,7 +133,8 @@ void WORKER(int id)
 
    while(!done_prog)
    {
-
+//Wsit is not initialized between different simulation runs. This only mess up the print-time, but FIX.
+//at end of file. i.e. when the file is closed.
      PrevWsit = Wsit;//this is used for printing at the end of the while loop.
 
      PrintDebug("About to recv Mcomm", outlog, 9);

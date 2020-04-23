@@ -325,7 +325,7 @@ int gcalc(double &grFinal, double &guFinal, WORKER_status &WStatus,
 //TODO find somewhere to store the A, weighing values for gr
    grFinal =  1.0*gr1 + 1.0*gr2 + 1.0*gr3 + gvalue;
 
-//now calculate the final value for uncertainty
+//now calculate the final value for uncertainty. 
    double temp1 = gu1 * gu1 * 1.0 * 1.0;
    double temp2 = gu2 * gu2 * 1.00 * 1.00;
    double temp3 = gu3 * gu3 * 1.0 * 1.0;
