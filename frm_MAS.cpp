@@ -23,9 +23,9 @@ verbosity outputLevel;
 void
 MASTER(int id, int P, arma::mat inP, double mult)
 {
-   // rows and columns will be casted to int later
-   assert(inP.n_rows < std::numeric_limits<int>::max());
-   assert(inP.n_cols < std::numeric_limits<int>::max());
+   // rows and columns will be cast to int later
+   assert(inP.n_rows < static_cast<arma::uword>(std::numeric_limits<int>::max()));
+   assert(inP.n_cols < static_cast<arma::uword>(std::numeric_limits<int>::max()));
 
    bool done_prog = false;
    double g_VALUE = 0.0;
