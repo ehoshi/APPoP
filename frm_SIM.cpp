@@ -348,7 +348,7 @@ int
 compare(point PntA, point PntB)
 {
    //XXX XXX CURRENTLY DEBUG MODE XXX XXX XXX
-   double mult = 0.1;
+   double mult = 0.5;
 
    // A > B w/o overlapping
    if (PntA.value - mult*PntA.error > PntB.value + mult*PntB.error) {
