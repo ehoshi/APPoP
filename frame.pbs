@@ -34,5 +34,5 @@ source /etc/profile.d/modules.sh
 module purge
 module add gcc/6.1.0
 module add openmpi/1.6.4-eth
-mpirun -np 7 -tag-output ~/systems/Water_code/APPoP/frame start_2.in > test1.out 2>test1ERR.out
+mpirun -np 7 -tag-output ./frame start.in > test1.out 2>test1ERR.out
 echo job finished at `date`
