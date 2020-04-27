@@ -3,6 +3,7 @@
 #include <csignal>
 #include <fstream>
 #include <iostream>
+#include <string>
 
 #include <armadillo>
 #include <mpi.h>
@@ -34,10 +35,10 @@ main(int argc, char *argv[])
    MPI_Comm_rank(MPI_COMM_WORLD, &Rank);
 
    // check commandline argument
-   if (argc != 2) {
+   if (argc != 3) {
       if (0 == Rank) {
          std::cerr << "MASTER ERROR: numnber of argument" << std::endl;
-         std::cerr << "Usage: mpirun -options ./frame inputfile" << std::endl;
+         std::cerr << "Usage: mpirun -options ./frame inputfile mult" << std::endl;
       }
 
       MPI_Finalize();
@@ -60,6 +61,16 @@ main(int argc, char *argv[])
       return 2;
    }
 
+   double mult = std::stod(argv[2]);
+   if (mult < 0) {
+      if (0 == Rank) {
+         std::cerr << "mult must be >= 0" << std::endl;
+      }
+      MPI_Finalize();
+      return 10;
+   }
+   std::cout << "setting mult to " << mult << std::endl;
+
    if (static_cast<arma::uword>(Proc) != inP.n_rows + 3) {
       if (0 == Rank) {
         std::cerr << "FATAL ERROR: There are not enough number of parallel processor.\n "
@@ -70,6 +81,7 @@ main(int argc, char *argv[])
       MPI_Finalize();
       return 3;
    }
+
    // XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX
    // PLEASE PLEASE PLEASE REMEMBER that this is modifying the signal handler.
    // some part in MPI relies on SIGCHLD signal handler, so there is a possibility
@@ -82,7 +94,7 @@ main(int argc, char *argv[])
 
    if (0 == Rank) {
       std::cout << "This is test print statment before master starts working" << std::endl;
-      MASTER(Rank, Proc, inP);
+      MASTER(Rank, Proc, inP, mult);
       std::cout << "Print after MASTER() function, success! in main" << std::endl;
    }
    else {

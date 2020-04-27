@@ -179,7 +179,7 @@ enum WRK_situation {NoStart, EqStart, ProdStart, ProdAvail, ProdFin};
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 // master and worker
-void MASTER(int, int, arma::mat);
+void MASTER(int, int, arma::mat, double);
 void WORKER(int);
 
 // calculation and other functions
@@ -204,8 +204,8 @@ void getbase(simplex *);
 void report(std::string, verbosity);
 void dart(point *);
 void printpoint(std::string, point);
-enum simplex_action optimize(simplex *, point **, bool &);
-int compare(point, point);
+enum simplex_action optimize(simplex *, point **, bool &, double);
+int compare(point, point, double);
 void swapPoints(simplex &, int, int);
 void resetRound(simplex &);
 

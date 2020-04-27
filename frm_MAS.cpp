@@ -21,7 +21,7 @@ verbosity outputLevel;
 
 
 void
-MASTER(int id, int P, arma::mat inP)
+MASTER(int id, int P, arma::mat inP, double mult)
 {
    // rows and columns will be casted to int later
    assert(inP.n_rows < std::numeric_limits<int>::max());
@@ -291,7 +291,7 @@ MASTER(int id, int P, arma::mat inP)
 ////////////////////////////////////////////////////////////////////////
 
       target = 0;
-      task = optimize(&blob, &target, DoIprint1);
+      task = optimize(&blob, &target, DoIprint1, mult);
 //      MASlog << "task = "  << task << std::endl;
       switch (task) {
       case initiate:

@@ -345,20 +345,15 @@ report(std::string message, verbosity level)
 }
 
 int
-compare(point PntA, point PntB)
+compare(point PntA, point PntB, double mult)
 {
-   //XXX XXX CURRENTLY DEBUG MODE XXX XXX XXX
-   double mult = 0.5;
-
    // A > B w/o overlapping
    if (PntA.value - mult*PntA.error > PntB.value + mult*PntB.error) {
-//   if (PntA.value > PntB.value) {
       return 1;
    }
 
    // A < B w/o overlapping
    if (PntA.value + mult*PntA.error < PntB.value - mult*PntB.error) {
-//   if (PntA.value < PntB.value) {
       return 2;
    }
 
@@ -409,7 +404,7 @@ resetRound(simplex &blob)
 // action is returned to be performed externally....sjs 6/24/09
 
 enum simplex_action
-optimize(simplex *blob, point **target, bool &SIMPswap)
+optimize(simplex *blob, point **target, bool &SIMPswap, double mult)
 {
    // quit when all simplex edges are shorter than this tolerance
    // convergence criteria
@@ -579,7 +574,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
       //TODO TODO TODO XXX move to order or new fxn, eventually
 
       // compare highest and sechigh
-      int chk1 = compare(blob->vertex[blob->sechigh], blob->vertex[blob->highest]);
+      int chk1 = compare(blob->vertex[blob->sechigh], blob->vertex[blob->highest], mult);
       if (0 == chk1) {
          std::cout << "FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
                    << ' ' << blob->vertex[blob->sechigh].value << " +/- " 
@@ -600,7 +595,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
       for (int i = 0; i < blob->vertices; i++) {
          // check lowest point
          if (i != blob->lowest) {
-            chk3 = compare(blob->vertex[blob->lowest], blob->vertex[i]);
+            chk3 = compare(blob->vertex[blob->lowest], blob->vertex[i], mult);
             if (1 == chk3) {
                chkT = true;
             }
@@ -608,8 +603,8 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
 
          // check highest and sechigh point
          if (i != blob->sechigh && i != blob->highest) {
-            chk2 = compare(blob->vertex[blob->sechigh], blob->vertex[i]);
-            chk4 = compare(blob->vertex[blob->highest], blob->vertex[i]);
+            chk2 = compare(blob->vertex[blob->sechigh], blob->vertex[i], mult);
+            chk4 = compare(blob->vertex[blob->highest], blob->vertex[i], mult);
             if (chk2 == 2) {
                chkT = true;
             }
@@ -662,7 +657,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
          // go ahead and reorder. Then compare with new highest.
          // reorder and compare R with NEW-highest
          order2(blob, false);
-         if (compare(blob->aux[0], blob->vertex[blob->highest]) == 2) {
+         if (compare(blob->aux[0], blob->vertex[blob->highest], mult) == 2) {
             GlobalPrintDebug("keeping reflected point-0", 5);
             SIMPswap = true;//tells calling fxn that simplex has moved
             swapPoint(*blob, blob->highest, 0);
@@ -698,8 +693,8 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
       //
       //
       // 2. reflected point is greater than lowest vale, but lower than 2nd highest
-      if (compare(blob->aux[0], blob->vertex[blob->lowest]) == 1 &&
-          compare(blob->aux[0], blob->vertex[blob->sechigh]) == 2) {
+      if (compare(blob->aux[0], blob->vertex[blob->lowest], mult) == 1 &&
+          compare(blob->aux[0], blob->vertex[blob->sechigh], mult) == 2) {
 
          // keep the reflected point.
          GlobalPrintDebug("keeping relfected point-1",5 );
@@ -713,7 +708,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
          return simplex_wait;
       }
       // 1. reflected value is less than or equal to lowest value
-      else if (compare(blob->aux[0], blob->vertex[blob->lowest]) == 2) {
+      else if (compare(blob->aux[0], blob->vertex[blob->lowest], mult) == 2) {
          std::stringstream whatever;
          whatever << blob->aux[0].value << " +/- " << blob->aux[0].error << " < "
                   << blob->vertex[blob->lowest].value << " +/- " << blob->vertex[blob->lowest].error
@@ -760,7 +755,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
          }
 
          // at this point we know the VALID value at the extended point
-         if (compare(blob->aux[1], blob->aux[0]) == 2) {
+         if (compare(blob->aux[1], blob->aux[0], mult) == 2) {
             // keep extended point
             GlobalPrintDebug("keeping extended point", 5);
             SIMPswap = true;  // tells calling fxn that simplex has moved
@@ -771,7 +766,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
                       << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
             return simplex_wait;
          }
-         else if (compare(blob->aux[1], blob->aux[0]) == 1) {
+         else if (compare(blob->aux[1], blob->aux[0], mult) == 1) {
             // keep reflected point
             GlobalPrintDebug("keeping reflected point-2", 5);
             SIMPswap = true;  // tells calling fxn that simplex has moved
@@ -790,7 +785,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
          }
       }  // end else if (blob->aux[0].value <= blob->vertex[blob->lowest].value)
       //3.  if reflected point is higher than worst
-      else if (compare(blob->aux[0], blob->vertex[blob->highest]) == 1) {  //TODO 2 types of contraction??? see drawing
+      else if (compare(blob->aux[0], blob->vertex[blob->highest], mult) == 1) {  //TODO 2 types of contraction??? see drawing
          // start a calculation of the contracted point if needed
          if (blob->aux_holds != contraction) {
             contract(blob);
@@ -833,8 +828,8 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
          }
 
          // at this point we know the value at the contraction
-         int OOI = compare(blob->aux[1], blob->aux[0]);
-         int OOT = compare(blob->aux[1], blob->vertex[blob->highest]);
+         int OOI = compare(blob->aux[1], blob->aux[0], mult);
+         int OOT = compare(blob->aux[1], blob->vertex[blob->highest], mult);
          if (0 == OOI || 0 == OOT) {
             const time_t Ctime = std::time(0);
             std::cout << "FRAME  " << __FILE__ << ' ' << __LINE__ << " simplex wait "
@@ -869,8 +864,8 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
          }
       }
       // 4. reflected point is worse than the second worst, but better than highest
-      else if (compare(blob->aux[0], blob->vertex[blob->sechigh]) == 1
-               && compare(blob->aux[0], blob->vertex[blob->highest]) == 2) {
+      else if (compare(blob->aux[0], blob->vertex[blob->sechigh], mult) == 1
+               && compare(blob->aux[0], blob->vertex[blob->highest], mult) == 2) {
         // 2nd type of contraction??? see drawing
         // replace the highest point with reflected point
          if (blob->aux_holds != contraction) {
@@ -922,7 +917,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
             return simplex_wait;
          }
 
-         int OOI = compare(blob->aux[1], blob->aux[0]);
+         int OOI = compare(blob->aux[1], blob->aux[0], mult);
          if (0 == OOI) {
             // error bar is overlapping
             const time_t Ctime = std::time(0);
@@ -942,7 +937,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap)
          // NOW replacing old highest with NEW highest--old H > new H
          // Also, the error bar comparison already happened on OOI
          swapPoint(*blob, blob->highest, 0);
-         int OOT = compare(blob->aux[1], blob->vertex[blob->highest]);
+         int OOT = compare(blob->aux[1], blob->vertex[blob->highest], mult);
          // NOW old high is replaced by aux[0]--VALUE OF aux[0] is the NEW high
 
          // at this point we know the value at the contraction
