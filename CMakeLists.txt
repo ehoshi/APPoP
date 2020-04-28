@@ -15,6 +15,9 @@ target_compile_options(frame PRIVATE
   $<$<OR:$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:
   -Werror -Wall -pedantic-errors -Wextra -Wconversion -Wsign-conversion>)
 target_include_directories(frame SYSTEM PRIVATE ${ARMADILLO_INCLUDE_DIRS})
+set_target_properties(frame PROPERTIES
+  CXX_STANDARD 11
+  CXX_STANDARD_REQUIRED ON)
 target_link_libraries(frame
   PRIVATE ${ARMADILLO_LIBRARIES}
   PRIVATE MPI::MPI_CXX)

@@ -1,16 +1,26 @@
 #include "frame.h"
 
 #include <csignal>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <string>
 
 #include <armadillo>
+#include "cxxopts/cxxopts.hpp"
 #include <mpi.h>
 
 
 std::ofstream GLOBAL_debuglog;
 
+
+/* \brief Called by atexit() handler before normal termination
+ */
+static void
+cleanup(void)
+{
+   MPI_Finalize();
+}
 
 ///////////////////////Signal Handler for waitpid///////////////////////
 extern "C" void
@@ -30,18 +40,37 @@ main(int argc, char *argv[])
    arma::mat inP;  //XXX temorary complete input file
 
    // MPI initializations
+   // MPI can modify arguments so this step must occur before general
+   // argument processing.
    MPI_Init(&argc, &argv);
    MPI_Comm_size(MPI_COMM_WORLD, &Proc);
    MPI_Comm_rank(MPI_COMM_WORLD, &Rank);
+   std::atexit(cleanup);
 
-   // check commandline argument
-   if (argc != 3) {
+   // check command-line arguments
+   cxxopts::Options options("frame", "Automated Parallel Parameterization of Parameters");
+   options.add_options("", {
+         {"h,help", "Print usage"},
+         {"m,mult", "Control size of the error bars",
+          cxxopts::value<double>()->default_value("0.0")},
+      });
+   options.custom_help("[OPTION...] inputfile");
+   cxxopts::ParseResult parsed = options.parse(argc, argv);
+   if (parsed.count("help")) {
       if (0 == Rank) {
-         std::cerr << "MASTER ERROR: numnber of argument" << std::endl;
-         std::cerr << "Usage: mpirun -options ./frame inputfile mult" << std::endl;
+         std::cout << options.help() << std::endl;
       }
 
-      MPI_Finalize();
+      // MPI_Finalize called by atexit handler
+      return 0;
+   }
+   if (argc != 2) {
+      if (0 == Rank) {
+         std::cerr << "MASTER ERROR: number of arguments" << std::endl;
+         std::cerr << options.help() << std::endl;
+      }
+
+      // MPI_Finalize called by atexit handler
       return 1;
    }
 
@@ -57,16 +86,18 @@ main(int argc, char *argv[])
          std::cerr << "FATAL ERROR: cannot load input file " << std::endl;
       }
 
-      MPI_Finalize();
+      // MPI_Finalize called by atexit handler
       return 2;
    }
 
-   double mult = std::stod(argv[2]);
+   // as an option with a default value, mult should always be available
+   double mult = parsed["mult"].as<double>();
    if (mult < 0) {
       if (0 == Rank) {
          std::cerr << "mult must be >= 0" << std::endl;
       }
-      MPI_Finalize();
+
+      // MPI_Finalize called by atexit handler
       return 10;
    }
    std::cout << "setting mult to " << mult << std::endl;
@@ -78,7 +109,7 @@ main(int argc, char *argv[])
                   << "ndim = number of dimensions, or number of parameters" << std::endl;
       }
 
-      MPI_Finalize();
+      // MPI_Finalize called by atexit handler
       return 3;
    }
 
@@ -103,7 +134,7 @@ main(int argc, char *argv[])
       std::cout << "Print after WORKER() function, success! in main from proc" << Rank << std::endl;
    }
 
-   MPI_Finalize();
+   // MPI_Finalize called by atexit handler
    return 0;
 }
 
