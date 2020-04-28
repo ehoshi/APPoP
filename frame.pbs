@@ -2,8 +2,8 @@
 
 # Request that regular output and terminal output go to the same file
 #PBS -j oe
-#PBS -l select=7:ncpus=3:mpiprocs=1:mem=4gb,walltime=72:00:00
-#PBS -N PLZ_work
+#PBS -l select=7:ncpus=3:mpiprocs=1:mem=4gb,walltime=144:00:00
+#PBS -N SIG05CEN
 
 # Ensure to parse the script to set the env vars for the compiler you used.
 source ~/.bashrc
@@ -34,5 +34,5 @@ source /etc/profile.d/modules.sh
 module purge
 module add gcc/6.1.0
 module add openmpi/1.6.4-eth
-mpirun -np 7 -tag-output ./frame start.in 0.5 > test1.out 2>test1ERR.out
+mpirun -np 7 -tag-output ./frame --mult 0.5 start.in > test1.out 2>test1ERR.out
 echo job finished at `date`
