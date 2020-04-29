@@ -255,24 +255,30 @@ gcalc(double &grFinal, double &guFinal, WORKER_status &WStatus,
    arma::mat temp_mat_unc1 = arma::sqrt(unc_var % unc_var + Eunc % Eunc);
 
    // 2. square
-   // arma::mat temp_mat_unc3 = temp_mat_unc2 * 2;this is undone in 4
-   arma::mat temp_mat_unc2 = temp_mat_unc1 / temp_mat_VAL1;  // relative error
+   // multiply unc (relative) by 2 to account for accumulation of error
+   // for taking a square of a value
+   arma::mat temp_mat_unc2 = 2 * temp_mat_unc1 / temp_mat_VAL1;  // relative error
    arma::mat temp_mat_VAL2 = temp_mat_VAL1 % temp_mat_VAL1;
 
    // 3. mulitply by weighing factor squared
    // error is skipped since relative error stays same, A_error = 0
    arma::mat temp_mat_VAL3 = temp_mat_VAL2 / (A % A);
 
+
+//TODO reverse 4 and 5 to get the RMS, not MAE
    // 4. square root
-   // arma::mat temp_mat_unc4 = emp_mat_unc3 / 2 ;how it is undone
-   arma::mat temp_mat_VAL4 = arma::sqrt(temp_mat_VAL3);
+   // NEW 4. sum
+   double temp_VAL4 = arma::accu( temp_mat_VAL3 );
+   arma::mat temp_mat_unc3 = temp_mat_unc2 % temp_mat_VAL3;  //UNDO rel error
+   double temp_unc4 = std::sqrt( arma::accu(temp_mat_unc3 % temp_mat_unc3) );
 
    // 5. sum
-   arma::mat temp_mat_unc3 = temp_mat_unc2 % temp_mat_VAL4;  //UNDO rel error
-
-   gvalue = arma::accu( temp_mat_VAL4 );
-   uncertainty = std::sqrt( arma::accu(temp_mat_unc3 % temp_mat_unc3) );
-
+   // new 5. square root
+   //divide relative error by 2 to get the uncertainty.
+   //Then undo at the end
+   gvalue = std::sqrt( temp_VAL4 );
+   double temp_unc5 = temp_unc4 / temp_VAL4 / 2; //relative error / 2
+   uncertainty = temp_unc5 * gvalue; //undo rel error
    /*
      variable to store the obj.fxn value for g(r) and associated uncertainties:
      gr = obj.fxn value for g(r)
@@ -368,10 +374,6 @@ gcalc(double &grFinal, double &guFinal, WORKER_status &WStatus,
       for (arma::uword i = 0; i < in_var.n_rows; i++) {
          terms << std::setw(8) << in_var(i) << ' '
                << std::setw(8) << unc_var(i) << ' ';
-      }
-      for (arma::uword i = 0; i < temp_mat_VAL4.n_rows; i++) {
-         terms << std::setw(8) << temp_mat_VAL4(i) << ' '
-               << std::setw(8) << temp_mat_unc3(i) * temp_mat_unc3(i) << ' ';
       }
       terms << std::asctime( std::localtime(&Ctime) );
       PrintDebug(terms.str(), outfile, 1);
