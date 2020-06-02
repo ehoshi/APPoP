@@ -244,7 +244,6 @@ gcalc(double &grFinal, double &guFinal, WORKER_status &WStatus,
    A(1) = 5E2;
    A(2) = 4e-6;
 
-   //TODO !!!!!!! READ THE PROPOSAL SEC. 2.2.1 FIX! XXX
    // temp value to store the obj.fxn value for non-pair correlation function
    double gvalue;
    double uncertainty;
@@ -265,14 +264,11 @@ gcalc(double &grFinal, double &guFinal, WORKER_status &WStatus,
    arma::mat temp_mat_VAL3 = temp_mat_VAL2 / (A % A);
 
 
-//TODO reverse 4 and 5 to get the RMS, not MAE
-   // 4. square root
    // NEW 4. sum
    double temp_VAL4 = arma::accu( temp_mat_VAL3 );
    arma::mat temp_mat_unc3 = temp_mat_unc2 % temp_mat_VAL3;  //UNDO rel error
    double temp_unc4 = std::sqrt( arma::accu(temp_mat_unc3 % temp_mat_unc3) );
 
-   // 5. sum
    // new 5. square root
    //divide relative error by 2 to get the uncertainty.
    //Then undo at the end
