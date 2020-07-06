@@ -11,4 +11,4 @@ cmake -D "CMAKE_PREFIX_PATH=$ARMADILLO_DIR" \
       -D "CMAKE_CXX_FLAGS=-Og" \
       -D "CMAKE_BUILD_TYPE=Debug" \
       ..
-make
+make "$@"

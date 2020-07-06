@@ -476,11 +476,10 @@ optimize(simplex *blob, point **target, bool &SIMPswap, double mult)
 //	 std::cerr << "should have checked whether order changed, but didn't" << std::endl;
          // are we done yet?
          bool simplex_converged = true;
-         double distance = 0.;
          for (int ivert = 0; ivert < blob->vertices; ++ivert) {
             for (int jvert = ivert+1; jvert < blob->vertices; ++jvert) {
             //XXX put distance back to original place when debug is over!
-//               double distance = 0.;
+               double distance = 0.;
                for (int idim = 0; idim < blob->vertex[0].dim; ++idim) {
                   distance += std::pow( (blob->vertex[ivert].coord[idim]
                                   - blob->vertex[jvert].coord[idim])/blob->base[idim], 2.0);
@@ -488,14 +487,12 @@ optimize(simplex *blob, point **target, bool &SIMPswap, double mult)
                if (distance > std::pow(tolerance, 2.0)) {
                   simplex_converged = false;
                }
-            }
-         }
-         {
          //XXX these are debug statements to track the termination criteria/distance
          //TODO debug and delete these print statements
             std::stringstream messString;
             messString << "distance = " << distance  << std::endl;
             GlobalPrintDebug(messString.str(),5 );
+            }
          }
          if (simplex_converged) {
             // shut down all simulations

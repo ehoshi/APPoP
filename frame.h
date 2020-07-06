@@ -184,6 +184,7 @@ void WORKER(int);
 
 // calculation and other functions
 int gcalc(double &, double &, WORKER_status &, std::ofstream &, unsigned long int, double, double);
+int gcalc2(double &, double &, WORKER_status &, std::ofstream &, unsigned long int, double, double);
 int gr_calc(std::string, std::string, double &, double&);
 bool has_nan(const arma::mat &);
 bool is_file_useful(std::ostringstream &);

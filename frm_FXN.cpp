@@ -380,6 +380,312 @@ gcalc(double &grFinal, double &guFinal, WORKER_status &WStatus,
    return 0;
 }
 
+
+int
+gcalc2(double &grFinal, double &guFinal, WORKER_status &WStatus,
+      std::ofstream &outfile, unsigned long int cnt, double prev_g,
+      double prev_u)
+{
+   PrintDebug("This is test message inside gcalc", outfile, 9);
+
+   arma::mat in_var;
+   arma::mat unc_var;
+   std::ostringstream Vin;
+   std::ostringstream Uin;
+
+   Vin << "var.txt";
+   Uin << "unc.txt";
+
+   // check for nan, inf, or any other limit type value in the file
+   if (is_file_useful(Vin) && is_file_useful(Uin)) {
+      if ( !in_var.load("var.txt") || !unc_var.load("unc.txt") ) {
+         PrintDebug("var & unc does not have readable value\n", outfile, 8);
+         WStatus = pending;
+         return 1;
+      }
+      PrintDebug("PRINT INSIDE is_file_useful-gcalc", outfile, 9);
+   }
+   else {
+      PrintDebug("At least one NaN value exitsts\n", outfile, 8);
+      WStatus = pending;
+      return 2;
+   }
+
+   {
+      std::ostringstream iVstr;
+      std::ostringstream iUstr;
+
+      iVstr << "PRINTED FROM gcalc in_var = \n"  << in_var << std::endl;
+      iUstr << "PRINTED FROM gcalc unc_var = \n" << unc_var << std::endl;
+
+      PrintDebug(iVstr.str(), outfile, 7);
+      PrintDebug(iUstr.str(), outfile, 7);
+   }
+/*For generalized version
+  Read a file (LitV.in) that contains
+  exp values on col1
+  unc values on col2
+  A   values on col3
+  to one matrix
+
+  arma::mat LitV
+  arma::vec Exp(LitV.n_rows)
+  arma::vec Eunc(LitV.n_rows)
+  arma::vec A(LitV.n_rows)
+
+  if( !LitV.load("LitV.in") )
+  {
+      return -1;
+  }
+
+  for(amra::uword z = 0; z < LitV.n_col; z++){
+      for(arma::uword y = 0; y < LitV.n_row;y++){
+        if(z == 0){
+           Exp(y) = LitV(y,z);
+        }
+        if(z == 1){
+           Eunc(y) = LitV(y,z);
+
+        }
+        if(z == 2){
+           A(y) = LitV(y,z);
+
+        }
+      }
+  }
+
+
+*/
+
+
+   // variables, vectors, and matricies used for NGOR-not paircorelation fxn
+   arma::vec Exp(3);  // vector to store the experimental value
+   arma::vec Eunc(3);  // vector to store experiental uncertainty
+   arma::vec A(3);  // vector to store the weighing factor
+
+   Exp(0) = -9.918;  // dH(vap) =  -43.98 kJ/mol DIVIDE THIS BY 4.184 TO GET KCAL/MOL
+                     // then subtract 0.592 kcal/mol to get internal energy
+   Exp(1) = 1.0; // Pressure atm
+   Exp(2) = 2.299e-5;  // D-self diffusion coeffiecent cm^2 / s
+
+   Eunc(0) = 0.01164;
+   Eunc(1) = 17.6638;
+   Eunc(2) = Exp(2) * 0.001;
+
+   //Tolerance ratio. The original constant vector
+   //made to relative error to match val2
+   A(0) = 1E-3 / -9.918;
+   A(1) = 3.5E2 / 1.0;
+   A(2) = 5e-7 / 2.299E-5;         
+
+   // temp value to store the obj.fxn value for non-pair correlation function
+   double gvalue;
+   double uncertainty;
+
+   arma::mat tempC1 = Eunc / Exp;//relative error of the A (unitless A values)
+
+   //normalize A. Does not have any unc.
+
+   arma::mat NormC = normalise(A);
+ 
+//changed the objective function
+   //calculating the uncertainty for the above:
+   //1. subtraction-keep the same
+   arma::mat temp_mat_VAL1 = in_var - Exp;
+   arma::mat temp_mat_unc1 = arma::sqrt(unc_var % unc_var + Eunc % Eunc);
+
+
+   //2. change val1 to rel. error
+   arma::mat temp_mat_VAL2 = temp_mat_VAL1 / Exp;
+   arma::mat temp_mat_unc2 = temp_mat_unc1 / temp_mat_VAL1;//relative error of the unc1
+
+   //relative error after division (rel.error of val2)
+   arma::mat temp_mat_unc3 = arma::sqrt( temp_mat_unc2 % temp_mat_unc2 + Eunc % Eunc);
+
+   //3. determine parallel part. val2 is the P vector
+   double parallel_val = 0.0;
+   double parallel_unc = 0.0;
+
+   //take dot product of P vector and NormC (w/uncertainty)
+   //Calculates A_parallel. Gives abs.unc.
+   double tempDunc = 0.0;
+   for(arma::uword i = 0; i < NormC.n_rows; i++){
+      double test_val = temp_mat_VAL2(i) * NormC(i);
+      //rel.error for the mult.step of the dot product
+      parallel_val += test_val; 
+      //convert rel.error to abs.error, 
+      //square, and sum to calculate the error of the summation of the dot product
+      tempDunc += (temp_mat_unc3(i) * test_val) * (temp_mat_unc3(i) * test_val)  ;
+
+   }
+
+   parallel_unc = std::sqrt(tempDunc);
+
+   //4. find the projection of the parallel vector
+   double perp_unc = 0.0;
+   double perp_val = arma::norm( temp_mat_VAL2 - (parallel_val*NormC) );
+
+   //get the rel.unc of parallel 
+   double tempUnc1 = parallel_unc/parallel_val;
+   
+   //This is to match the size of temps w/NormC
+   arma::mat tempUnc2 = NormC;
+   arma::mat tempVAL2 = NormC;//this is used for calculating errors in normalization
+   //get abs.unc of the multiplication (tempUnc1 is rel.unc)
+   for(arma::uword i = 0; i < NormC.n_rows; i++){
+      double tempC = parallel_val * NormC(i);
+      tempUnc2(i) = tempC * tempUnc1;
+      tempVAL2(i) = temp_mat_VAL2(i) - tempC;
+   }
+    
+    
+   //abs.unc of VAL2
+   arma::mat temp_mat_unc4 = temp_mat_unc3 % temp_mat_VAL2;
+   arma::mat temp_mat_unc5 = NormC;
+   
+   //get error for the subtraction (abs.unc)
+   for(arma::uword i = 0; i < NormC.n_rows; i++){
+   temp_mat_unc5(i) = std::sqrt( tempUnc2(i) * tempUnc2(i) + temp_mat_unc4(i) * temp_mat_unc4(i) );
+   }
+
+   //find error for calculating the magnitude
+   arma::mat tempUnc3 = temp_mat_unc5 / tempVAL2; //rel.error of VAL2 (subtraction)
+   //square of each term (rel.unc) then convert to abs.unc
+   arma::mat tempUnc4 = tempVAL2 % tempVAL2 % arma::sqrt(tempUnc3 % tempUnc3 + tempUnc3 % tempUnc3);   
+   //sum (abs.unc) then take the square root of the sum unc. Gives rel.unc
+   double tempUnc5 = std::sqrt( arma::accu( tempUnc4 % tempUnc4 ) ) /arma::accu(tempVAL2%tempVAL2) / 2;
+   //get abs.unc of above
+   perp_unc = tempUnc5 * perp_val;
+
+   gvalue = (parallel_val * parallel_val) + (100 * perp_val * perp_val);
+
+   //calculate the unc for gvalue
+   double temparaUNC1 = parallel_unc / parallel_val;
+   double temparaUNC2 = 0;
+   double temparaUNC3 = 0;
+   double temperpUNC1 = 0;
+   double temperpUNC2 = 0;
+
+   //unc of multiplication of the gvalue (square). Rel.unc
+   temparaUNC2 = std::sqrt( temparaUNC1 * temparaUNC1 + temparaUNC1 * temparaUNC1 ) ;
+   temperpUNC1 = std::sqrt(tempUnc5 * tempUnc5 + tempUnc5 * tempUnc5) ;
+
+   //comvert above error to abs. error
+   temparaUNC3 = temparaUNC2 * parallel_val * parallel_val;
+   temperpUNC2 = temperpUNC1 * perp_val * perp_val * 100;
+   //error of sum
+   
+   uncertainty = std::sqrt(temparaUNC3 * temparaUNC3 + temperpUNC2 * temperpUNC2);
+
+/*
+     variable to store the obj.fxn value for g(r) and associated uncertainties:
+     gr = obj.fxn value for g(r)
+     gu = uncertainty associated with g(r)
+     label with 1 => O-O pair correlation function
+     label with 2 => O-H pair correlation function
+     label with 3 => H-H pair correlation function
+   */
+   double gr1 = 0;
+   double gr2 = 0;
+   double gr3 = 0;
+   double gu1 = 0;
+   double gu2 = 0;
+   double gu3 = 0;
+
+   // these are string to assign file names,which are files generated by simulation
+   // Used for reading g(r) data from file
+   std::string eFile1    = "gOO_Soper.dat";
+   std::string eFile2    = "gOH_Soper.dat";
+   std::string eFile3    = "gHH_Soper.dat";
+   std::string sFile1    = "g0808.prod";
+   std::string sFile2    = "g0801.prod";
+   std::string sFile3    = "g0101.prod";
+
+   // OO piar correlation function calculation
+   int gr_calcChk = gr_calc(eFile1, sFile1, gr1, gu1);
+   if (-1 == gr_calcChk) {
+      outfile << "ERROR: cannot load one or more of the pair-correlation function"
+              << " files.\n This can be caued by simulaion program failed to produce "
+              << "pair correlation function file\n or experimental results are missing"
+              << " from tempdir" << std::endl;
+
+      WStatus = error;
+      return -1;
+   }
+
+   // OH pair correlation function calculation
+   gr_calcChk = gr_calc(eFile2, sFile2, gr2, gu2);
+   if (-1 == gr_calcChk) {
+      outfile << "ERROR: cannot load one or more of the pair-correlation function"
+              << " files.\n This can be caued by simulaion program failed to produce "
+              << "pair correlation function file\n or experimental results are missing"
+              << " from tempdir" << std::endl;
+
+      WStatus = error;
+      return -1;
+   }
+
+   // HH pair correlation function calculation
+   gr_calcChk = gr_calc(eFile3, sFile3, gr3, gu3);
+   if (-1 == gr_calcChk) {
+      outfile << "ERROR: cannot load one or more of the pair-correlation function"
+              << " files.\n This can be caued by simulaion program failed to produce "
+              << "pair correlation function file\n or experimental results are missing"
+              << " from tempdir" << std::endl;
+
+      WStatus = error;
+      return -1;
+   }
+
+   // calculate the objfxn for g(r)
+   //TODO find somewhere to store the A, weighing values for gr
+   grFinal =  1.0*gr1 + 1.0*gr2 + 1.0*gr3 + gvalue;
+
+   // now calculate the final value for uncertainty.
+   double temp1 = gu1 * gu1 * 1.0 * 1.0;
+   double temp2 = gu2 * gu2 * 1.00 * 1.00;
+   double temp3 = gu3 * gu3 * 1.0 * 1.0;
+   double temp4 = uncertainty * uncertainty;
+
+   guFinal = std::sqrt(temp1 + temp2 +temp3 + temp4);
+
+   if ( (prev_g > 0 && prev_u > 0)
+        && (std::abs(prev_g - grFinal) >= prev_g * 0.01
+            || std::abs(prev_u - guFinal) >= prev_u * 0.01) ) {
+
+      const time_t Ctime = std::time(0);
+
+      std::ostringstream terms;
+//      terms << "# LOOP grF guF gvalue unc gr1 gr2 gr3 gu1 gu2 gu3 E P D Eu Pu Du time" << std::endl;
+
+      terms << std::setw(8) << cnt << ' '
+            << std::setw(12) << grFinal << ' '
+            << std::setw(12) << guFinal << ' '
+            << std::setw(12) << gvalue << ' '
+            << std::setw(12) << uncertainty << ' '
+            << std::setw(12) << parallel_val << ' '
+            << std::setw(12) << parallel_unc << ' '
+            << std::setw(12) << perp_val << ' '
+            << std::setw(12) << perp_unc << ' '
+            << std::setw(12) << gr1 << ' '
+            << std::setw(12) << gu1 << ' '
+            << std::setw(12) << gr2 << ' '
+            << std::setw(12) << gu2 << ' '
+            << std::setw(12) << gr3 << ' '
+            << std::setw(12) << gu3 << ' ';
+      for (arma::uword i = 0; i < in_var.n_rows; i++) {
+         terms << std::setw(8) << in_var(i) << ' '
+               << std::setw(8) << unc_var(i) << ' ';
+      }
+      terms << std::asctime( std::localtime(&Ctime) );
+      PrintDebug(terms.str(), outfile, 1);
+   }
+
+   // returns 0 with gcalc success
+   WStatus = active;
+
+   return 0;
+}
 ////////////////////////////////////////////////////////////////////////
 /*
    gr_calc caluclates the uncertainty and obj.fxn value of pair correlation funciton.
