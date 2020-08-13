@@ -1,8 +1,9 @@
 #!/bin/sh
 
-module load cmake/3.13.1
-module load armadillo
-module add gcc/6.1.0 openmpi/1.6.4-eth
+module load cuda/10.2.89-gcc/8.3.1
+module load cmake/3.17.3-gcc/8.3.1
+module load openmpi/3.1.6-gcc/8.3.1-cuda10_2-ucx
+module load armadillo/7.950.1-gcc/8.3.1-cuda10_2
 #OR module load gcc/8.2.0 openmpi/4.0.1-gcc82-ucx
 
 mkdir build
