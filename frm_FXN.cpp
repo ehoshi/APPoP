@@ -474,33 +474,52 @@ gcalc2(double &grFinal, double &guFinal, WORKER_status &WStatus,
 
    //Tolerance ratio. The original constant vector
    //made to relative error to match val2
+//original values. Unitless
+/*
    A(0) = 1E-3 / -9.918;
    A(1) = 3.5E2 / 1.0;
    A(2) = 5e-7 / 2.299E-5;         
+ make the values to be 1/A
+   A(0) = 1/1E-3;
+   A(1) = 1/3.5E2;
+   A(2) = 1/5e-7;         
+*/
+   //testing tolerance ratio. It is 1/A
+   //Units are also 1/A (relative version)
+   A(0) = 1/(1E-3 / -9.918);
+   A(1) = 1/(3.5E2 / 1.0);
+   A(2) = 1/(5e-7 / 2.299E-5);         
 
    // temp value to store the obj.fxn value for non-pair correlation function
    double gvalue;
    double uncertainty;
 
-   arma::mat tempC1 = Eunc / Exp;//relative error of the A (unitless A values)
+//   arma::mat tempC1 = Eunc / Exp;//relative error of the A (unitless A values)
 
    //normalize A. Does not have any unc.
 
    arma::mat NormC = normalise(A);
  
 //changed the objective function
-   //calculating the uncertainty for the above:
    //1. subtraction-keep the same
-   arma::mat temp_mat_VAL1 = in_var - Exp;
+   //XXX VAL1: change this, if needed. The difference is divided by a constant 
+   //(same value as experimental value and units) with no error to get rid of units
+//   arma::mat temp_mat_VAL1 = in_var - Exp;
+   arma::mat temp_mat_VAL1 = (in_var - Exp) / Exp;
    arma::mat temp_mat_unc1 = arma::sqrt(unc_var % unc_var + Eunc % Eunc);
+   //XXX original unc2
+//   arma::mat temp_mat_unc2 = temp_mat_unc1 / temp_mat_VAL1;//relative error of the unc1. Original
+
+//Since division is considered constant with no error, relative error is calculated from subtraction only
+   arma::mat temp_mat_unc2 = temp_mat_unc1 / (in_var - Exp);//relative error of the unc1, subtraction only
 
 
-   //2. change val1 to rel. error
-   arma::mat temp_mat_VAL2 = temp_mat_VAL1 / Exp;
-   arma::mat temp_mat_unc2 = temp_mat_unc1 / temp_mat_VAL1;//relative error of the unc1
+   //2. change val1 to rel. omitted due to large propagation of error
+//   arma::mat temp_mat_VAL2 = temp_mat_VAL1 / Exp;
+//   arma::mat temp_mat_unc2 = temp_mat_unc1 / temp_mat_VAL1;//relative error of the unc1
 
    //relative error after division (rel.error of val2)
-   arma::mat temp_mat_unc3 = arma::sqrt( temp_mat_unc2 % temp_mat_unc2 + Eunc % Eunc);
+//   arma::mat temp_mat_unc3 = arma::sqrt( temp_mat_unc2 % temp_mat_unc2 + Eunc % Eunc);
 
    //3. determine parallel part. val2 is the P vector
    double parallel_val = 0.0;
@@ -510,12 +529,12 @@ gcalc2(double &grFinal, double &guFinal, WORKER_status &WStatus,
    //Calculates A_parallel. Gives abs.unc.
    double tempDunc = 0.0;
    for(arma::uword i = 0; i < NormC.n_rows; i++){
-      double test_val = temp_mat_VAL2(i) * NormC(i);
+      double test_val = temp_mat_VAL1(i) * NormC(i);
       //rel.error for the mult.step of the dot product
       parallel_val += test_val; 
       //convert rel.error to abs.error, 
       //square, and sum to calculate the error of the summation of the dot product
-      tempDunc += (temp_mat_unc3(i) * test_val) * (temp_mat_unc3(i) * test_val)  ;
+      tempDunc += (temp_mat_unc2(i) * test_val) * (temp_mat_unc2(i) * test_val)  ;
 
    }
 
@@ -523,24 +542,24 @@ gcalc2(double &grFinal, double &guFinal, WORKER_status &WStatus,
 
    //4. find the projection of the parallel vector
    double perp_unc = 0.0;
-   double perp_val = arma::norm( temp_mat_VAL2 - (parallel_val*NormC) );
+   double perp_val = arma::norm( temp_mat_VAL1 - (parallel_val*NormC) );
 
    //get the rel.unc of parallel 
    double tempUnc1 = parallel_unc/parallel_val;
    
    //This is to match the size of temps w/NormC
    arma::mat tempUnc2 = NormC;
-   arma::mat tempVAL2 = NormC;//this is used for calculating errors in normalization
+   arma::mat tempVAL1 = NormC;//this is used for calculating errors in normalization
    //get abs.unc of the multiplication (tempUnc1 is rel.unc)
    for(arma::uword i = 0; i < NormC.n_rows; i++){
       double tempC = parallel_val * NormC(i);
       tempUnc2(i) = tempC * tempUnc1;
-      tempVAL2(i) = temp_mat_VAL2(i) - tempC;
+      tempVAL1(i) = temp_mat_VAL1(i) - tempC;
    }
     
     
-   //abs.unc of VAL2
-   arma::mat temp_mat_unc4 = temp_mat_unc3 % temp_mat_VAL2;
+   //abs.unc of VAL1
+   arma::mat temp_mat_unc4 = temp_mat_unc2 % temp_mat_VAL1;
    arma::mat temp_mat_unc5 = NormC;
    
    //get error for the subtraction (abs.unc)
@@ -549,11 +568,12 @@ gcalc2(double &grFinal, double &guFinal, WORKER_status &WStatus,
    }
 
    //find error for calculating the magnitude
-   arma::mat tempUnc3 = temp_mat_unc5 / tempVAL2; //rel.error of VAL2 (subtraction)
+   arma::mat tempUnc3 = temp_mat_unc5 / tempVAL1; //rel.error of VAL2 (subtraction)
    //square of each term (rel.unc) then convert to abs.unc
-   arma::mat tempUnc4 = tempVAL2 % tempVAL2 % arma::sqrt(tempUnc3 % tempUnc3 + tempUnc3 % tempUnc3);   
+//   arma::mat tempUnc4 = tempVAL1 % tempVAL1 % arma::sqrt(tempUnc3 % tempUnc3 + tempUnc3 % tempUnc3);   
+   arma::mat tempUnc4 = tempVAL1 % tempVAL1 % tempUnc3 * 2;//uses power rule
    //sum (abs.unc) then take the square root of the sum unc. Gives rel.unc
-   double tempUnc5 = std::sqrt( arma::accu( tempUnc4 % tempUnc4 ) ) /arma::accu(tempVAL2%tempVAL2) / 2;
+   double tempUnc5 = std::sqrt( arma::accu( tempUnc4 % tempUnc4 ) ) /arma::accu(tempVAL1%tempVAL1) / 2;
    //get abs.unc of above
    perp_unc = tempUnc5 * perp_val;
 
@@ -567,8 +587,10 @@ gcalc2(double &grFinal, double &guFinal, WORKER_status &WStatus,
    double temperpUNC2 = 0;
 
    //unc of multiplication of the gvalue (square). Rel.unc
-   temparaUNC2 = std::sqrt( temparaUNC1 * temparaUNC1 + temparaUNC1 * temparaUNC1 ) ;
-   temperpUNC1 = std::sqrt(tempUnc5 * tempUnc5 + tempUnc5 * tempUnc5) ;
+//   temparaUNC2 = std::sqrt( temparaUNC1 * temparaUNC1 + temparaUNC1 * temparaUNC1 ) ;
+   temparaUNC2 = 2 * temparaUNC1;//again, power rule
+//   temperpUNC1 = std::sqrt(tempUnc5 * tempUnc5 + tempUnc5 * tempUnc5) ;
+   temperpUNC1 = 2 * tempUnc5;//same
 
    //comvert above error to abs. error
    temparaUNC3 = temparaUNC2 * parallel_val * parallel_val;
