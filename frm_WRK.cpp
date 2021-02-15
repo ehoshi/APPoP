@@ -418,7 +418,7 @@ WORKER(int id)
                }
                else {
                   PrintDebug("DEBUG BEFOER gcalc-in PRODstart", outlog, 9);
-                  int gcalc_Chk = gcalc2(g_VALUE, g_UNC, Wstat, glog, temp_count, -1, -1);
+                  int gcalc_Chk = gcalc(g_VALUE, g_UNC, Wstat, glog, temp_count, -1, -1);
                   {
                      std::ostringstream Sstring;
                      Sstring << "DEBUG AFTER gcalc-in PRODstart gcalc_Chk = " << gcalc_Chk;
@@ -465,7 +465,7 @@ WORKER(int id)
                   prev_u = g_UNC;  // previous value of unc-used to min. printing
 
                   PrintDebug("PRINT BEFORE gcalc-in PRODavail", outlog, 9); 
-                  int gcalc_Chk = gcalc2(g_VALUE, g_UNC, Wstat , glog, temp_count, prev_g, prev_u);
+                  int gcalc_Chk = gcalc(g_VALUE, g_UNC, Wstat , glog, temp_count, prev_g, prev_u);
                   {
                      std::ostringstream Sstring;
                      Sstring << "Print after gcalc:"  << " The value of gcalcChk = " 
