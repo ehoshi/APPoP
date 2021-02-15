@@ -1,10 +1,7 @@
 #!/bin/sh
 
 module purge
-#module load armadillo/9.800.3-gcc/8.3.1-cuda10_2
 module load openmpi/4.0.3-gcc/8.3.1-ucx
-#module load openmpi/3.1.5-gcc/7.1.0-ucx
-#module load gcc/8.2.0 openmpi/4.0.1-gcc82-ucx
 
 mkdir build
 cd build
