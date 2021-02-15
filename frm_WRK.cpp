@@ -46,8 +46,8 @@ LaunchScript(std::string name)
       std::string path = "./"+name+".sh";
       int chkEXC1 = ::execl(path.c_str(), name.c_str(), reinterpret_cast<char*>(0));
       if (-1 == chkEXC1) {
-         std::cout << "FRAME ERROR: failed at execl (child) by proc " << rank << std::endl;
          std::perror("execl");
+         std::cout << "FRAME ERROR: failed at execl (child) by proc " << rank << std::endl;
          ::_exit(1);
       }
       assert(false);  // should never be reached
@@ -95,8 +95,9 @@ WORKER(int id)
 
    // make new directory
    int chkSys6 = mkdir(sysstr6.str().c_str(), 0777);
-   if (-1 == chkSys6 || WEXITSTATUS(chkSys6) != 0) {
+   if (-1 == chkSys6) {
       //TODO this does not take care of a case where there is already a directory exisiting
+      std::perror("mkdir");
       std::cout << "FRAME ERROR: failed at making directory by proc"<< id <<std::endl;
       Wstat = error;
       //send error status to MASTER
@@ -105,6 +106,7 @@ WORKER(int id)
       // change the working directory
       int chkCHDIR = ::chdir(sysstr6.str().c_str());
       if (-1 == chkCHDIR) {
+         std::perror("chdir");
          std::cout << "FRAME ERROR: cannot change directory by processor" << id <<'\n'
                    << "--" << std::strerror(errno) << std::endl;
          Wstat = error;
@@ -113,6 +115,7 @@ WORKER(int id)
       else {
          int chkcpy = std::system("cp ../runfiles/* .");
          if (-1 == chkcpy) {
+            std::perror("runfiles");
             std::cout << "FRAME ERROR: cannot copy templates by processor" << id << std::endl;
             Wstat = error;
             //send error status to MASTER
@@ -304,8 +307,8 @@ WORKER(int id)
             pid = LaunchScript("eqi");
 
             if (pid < 0){
-               outlog << "ERROR: failed to fork by process " << id << std::endl;
                std::perror("fork");
+               outlog << "ERROR: failed to fork by process " << id << std::endl;
                Wstat = error;
             }
             /*
@@ -375,8 +378,8 @@ WORKER(int id)
                pid = LaunchScript("prod");
 
                if (pid < 0) {
-                  outlog << "ERROR: failed to fork by process " << id << std::endl;
                   std::perror("fork");
+                  outlog << "ERROR: failed to fork by process " << id << std::endl;
                   Wstat = error;
                }
                else {  // parent process 
