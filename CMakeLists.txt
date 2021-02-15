@@ -13,7 +13,6 @@ add_executable(frame
   frm_SIM.cpp
   frm_WRK.cpp)
 if(USE_BUNDLED_ARMADILLO)
-    target_compile_definitions(frame PRIVATE ARMA_DONT_USE_WRAPPER)
     set(ARMADILLO_INCLUDE_DIRS armadillo-9.800.3/include)
 endif()
 target_compile_options(frame PRIVATE
