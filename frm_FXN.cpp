@@ -240,8 +240,8 @@ gcalc(double &grFinal, double &guFinal, WORKER_status &WStatus,
 
    // weighing factor can be thought as tolerance
    // calculated as 1/A
-   A(0) = 1E0;
-   A(1) = 5E2;
+   A(0) = 5E-2;
+   A(1) = 4E2;
    A(2) = 4e-6;
 
    // temp value to store the obj.fxn value for non-pair correlation function
@@ -486,10 +486,15 @@ gcalc2(double &grFinal, double &guFinal, WORKER_status &WStatus,
 */
    //testing tolerance ratio. It is 1/A
    //Units are also 1/A (relative version)
+/*
    A(0) = 1/(1E-3 / -9.918);
    A(1) = 1/(3.5E2 / 1.0);
    A(2) = 1/(5e-7 / 2.299E-5);         
-
+*/
+   //XXX "optimized" values. Probably makes no sense
+   A(0) = 1.0017;
+   A(1) = -1.0191;
+   A(2) = 0.1878;         
    // temp value to store the obj.fxn value for non-pair correlation function
    double gvalue;
    double uncertainty;
