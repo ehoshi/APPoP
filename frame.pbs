@@ -2,7 +2,7 @@
 
 # Request that regular output and terminal output go to the same file
 #PBS -j oe
-#PBS -l select=1:ncpus=24:mpiprocs=24:mem=100gb:ngpus=2:gpu_model=v100,walltime=72:00:00
+#PBS -l select=1:ncpus=24:mpiprocs=24:mem=100gb:interconnect=hdr:ngpus=2:gpu_model=v100,walltime=72:00:00
 #PBS -N ObjNew_025
 
 # Ensure to parse the script to set the env vars for the compiler you used.
