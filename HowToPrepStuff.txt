@@ -1,0 +1,43 @@
+
+MASTERLOG analysis (every single recordings of simplex)
+
+Get MASTERlog to only print objective function values of all reports
+grep vertex MASTERlog.out | sed -e '1,6d'| awk '{print $6}' | awk '{print;} NR % 4 == 0 {print"";}'> MASout.dat
+
+SIMPLOG analysis (only recordings of each simplex steps taken)
+
+Get SIMPLOG to only print objective function values
+awk 'NF' SIMPlog.out | awk '{print $5}' | awk '{print;} NR % 4 == 0 {print"";}' > SIMoutFXN_all.dat
+
+Get SIMPLOG to only print obj fxn values and X values (step number)
+awk 'NF' SIMPlog.out | awk '{print int((NR-1)/4)+1, $5}' > SIMout_all.dat
+
+Get SIMPlog to only print lowest objfxn values and X values
+awk 'NF' SIMPlog.out | awk '{print int((NR-1)/4)+1, $5}' | awk 'NR%4==1' > SIMout_low.dat
+
+
+--the rest of the plotting is the same, since both files are formatted the same way
+
+get an interactive node (on X)
+module load R
+change directory with data
+run R (typing R)
+
+--R running
+y<-matrix(scan("MASout.dat"),nrow=4)
+write.table(y,"output.dat",row.names=F,col.names=F)
+type "quit" to quit R or ctrl-d
+--R closed
+
+run gnuplot (on X)
+gnuplot -e "set terminal png size 400,300 //set output image file
+set output 'xyz.png' //save the output to this file
+set style data boxplot //*optional to give the classic boxplot style
+plot for[i=1:290] 'output.dat' using (i):i notitle
+//this gives 290 'boxplot' 
+//the later (i):i means (x):y, where y is the values of column
+//i.e. plot all values in column i at x (multiple points per x value
+
+**gnuplot> plot for[i=1:210] 'output.dat' u (i):(abs(column(i)))
+this will give the same graph in log scale. -1 is now +1 due to abs value
+*Find the way to fit a line
