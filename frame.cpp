@@ -100,13 +100,23 @@ main(int argc, char *argv[])
       // MPI_Finalize called by atexit handler
       return 10;
    }
-   std::cout << "setting mult to " << mult << std::endl;
 
-   if (static_cast<arma::uword>(Proc) != inP.n_rows + 3) {
+   arma::uword tempFsize = inP.n_rows/(inP.n_cols+1);
+   if(0 == Rank){
+      std::cout << "nProc = " << Proc << std::endl;
+      std::cout << "setting mult to " << mult << std::endl;
+      std::cout << "fSize = " << tempFsize << std::endl;
+   }
+   //temporary calculate the fSize for Proc error checking
+
+   //n_proc required is: inP.n_rows for each vertex
+   //2*tempFsize for auxR and aux2
+   //+1 for the master process
+   if (static_cast<arma::uword>(Proc) < inP.n_rows + tempFsize*2 + 1) {
       if (0 == Rank) {
-        std::cerr << "FATAL ERROR: There are not enough number of parallel processor.\n "
-                  << "Minimum number of processor required is: ndim + 1 + 1 + 2\n" 
-                  << "ndim = number of dimensions, or number of parameters" << std::endl;
+        std::cerr << "FATAL ERROR: There are wrong number of parallel processor.\n "
+                  << "The number of processor required is: n_rows + 2*fSize + 1\n" 
+                  << "n_rows = number of vertex, fSize = fraction size" << std::endl;
       }
 
       // MPI_Finalize called by atexit handler

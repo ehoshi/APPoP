@@ -75,6 +75,11 @@ enum simplex_action { initiate, simplex_wait, restart, shrink, quit, crash, noth
 enum Point_kind {verte, auxil};
 
 /*
+ *Basically tells wether the vertex has simulation running
+ or not
+ */
+enum Point_stat { running, not_running };
+/*
    point-gives descrption of a single point
    coord(i) = ith coordinate of point
    dim = number of dimensions of space
@@ -90,15 +95,16 @@ enum Point_kind {verte, auxil};
 */
 struct point
 {
-   double coord[MAXDIM];
-   int dim;
+   arma::vec coord;
+   arma::uword dim;
    double value;
    double error;
    int PointID;
    int ProcID;
    int VertID;
-   int orderID;
+   int  orderID;
    bool overlap;
+   Point_stat Pstat;
    Point_kind Pkind;
    WORKER_status status;
    MASTER_comand ComEx;
@@ -135,14 +141,70 @@ enum aux_type { none, extension, contraction };
 */
 struct simplex
 {
+   int vertices;
    point vertex[MAXVERT];
    point aux[MAXAUX];
    double base[MAXDIM];
-
-   int vertices;
    int lowest;
    int highest;
    int sechigh;
+   int age;
+   enum simplex_status sort_status;
+   enum simplex_status base_status;
+   enum simplex_status reflect_status;
+   enum aux_type aux_holds;
+};
+
+/*
+   Apparently complex has special meaning in C++. To prevent confusion, the 
+   name has been changed to Notsimplex instead of complex
+   data structure for Notsimplex = complex:
+   vertex(k) = kth vertex of complex
+   auxR(j) = jth auxiliary points associated with reflection of complex
+   aux2(j) = jth auxiliary points associated with secondary move of complex
+             i.e. contraction and extension
+   n_vert = number of vertices in complex
+   n_dim = number of dimension = n_cols
+   fSize = size of the fraction. Usually n_vert/n_dim
+   baseLow(i) = coordinates of base for fLow
+   baseHigh(i) = coordinates of base for fHigh
+   baseSecHigh(i) = coordinates of base for fSecHigh
+   baseCent(i) = coordinates of base for centroid f \neq fHigh
+   y = objective function values of the respective fractions
+   u = noise/error of the objective function values of the respective fractions
+   age = number of generations of simplex
+   sort_status = whether simplex sorting status and base are current
+   reflect_status = whether reflection is current
+   aux_holds = which type of provisional vertex is stored in aux2
+*/
+struct Notsimplex
+{
+   std::vector <point> vertex;
+   std::vector <point> auxR;
+   std::vector <point> aux2;
+
+   arma::uword n_vert;
+   arma::uword n_dim;
+   arma::uword fSize;
+   arma::vec baseLow;
+   arma::vec baseHigh;
+   arma::vec baseSecHigh;
+   arma::vec baseCent;
+
+   double yfCent;
+   double yfLow;
+   double yfSecHigh;
+   double yfHigh;
+   double yfR;
+   double yf2;
+
+   double ufCent;
+   double ufLow;
+   double ufSecHigh;
+   double ufHigh;
+   double ufR;
+   double uf2;
+
    int age;
    enum simplex_status sort_status;
    enum simplex_status base_status;
@@ -190,37 +252,42 @@ bool has_nan(const arma::mat &);
 bool is_file_useful(std::ostringstream &);
 void GlobalPrintDebug(std::string, const int);
 void PrintDebug(const std::string &, std::ofstream &, const int);
-void SetVec(arma::vec &, const int, const int, const simplex);
-bool ChkErr(const simplex blob, bool );
+void SetVec(arma::vec &, const int, const Notsimplex);
+bool ChkErr(const Notsimplex blob, bool );
+void calcFrac(Notsimplex &);
 
 // simplex related
-void reflect(simplex *);
-void extend(simplex *);
-void contract(simplex *);
-void collapse(simplex *);
+void reflect(Notsimplex *);
+void extend(Notsimplex *);
+void contract(Notsimplex *);
+void collapse(Notsimplex *);
 point slide(point, point, double);
 int order1(simplex *);
-int order2(simplex *, bool);
-void getbase(simplex *);
+int order2(Notsimplex *, bool);
+void getbase(Notsimplex *);
 void report(std::string, verbosity);
 void dart(point *);
 void printpoint(std::string, point);
-enum simplex_action optimize(simplex *, point **, bool &, double);
+enum simplex_action optimize(Notsimplex *, std::vector<int> &, bool &, double);
 int compare(point, point, double);
-void swapPoints(simplex &, int, int);
-void resetRound(simplex &);
+int compare2(double, double, double, double, double);
+void swapPoint(Notsimplex &, int);
+void resetRound(Notsimplex &);
 
 // fork-exec and status reltated functions (mainly used by MASTER)
 int StatChk(const pid_t, WORKER_status &, const int);
 void killJob(const pid_t);
 void PrintWsit(const WRK_situation, std::ofstream &);
-enum MASTER_comand MASwork(const WORKER_status, const int, const simplex);
-void updateMWstat(const WORKER_status, const int, simplex &);
-void updateVALUEs(const int, const double, const double, simplex &);
-MASTER_comand GetMcomm(const int, const simplex);
-void printsimplex(const simplex &, std::ostream &);
-bool DetectChangeWstat(const simplex, const WORKER_status, int);
-WORKER_status getPrevWstat(const simplex, int);
+enum MASTER_comand MASwork(const WORKER_status, const int, const Notsimplex);
+void updateMWstat(const WORKER_status, const int, Notsimplex &);
+void updateVALUEs(const int, const double, const double, Notsimplex &);
+MASTER_comand GetMcomm(const int, const Notsimplex);
+void printsimplex(const Notsimplex &, std::ostream &);
+bool DetectChangeWstat(const Notsimplex, const WORKER_status, int);
+WORKER_status getPrevWstat(const Notsimplex, int);
+
+//Debug/error checking functions
+void CheckProcID(const Notsimplex);
 
 // Only function other than worker that calls vfork&exec
 int DoScript(std::string);

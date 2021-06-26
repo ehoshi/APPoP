@@ -2,6 +2,7 @@
 
 module purge
 module load openmpi/4.0.3-gcc/8.3.1-ucx
+rm -r build
 
 mkdir build
 cd build

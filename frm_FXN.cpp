@@ -45,20 +45,25 @@ GlobalPrintDebug(std::string StrToPrint, const int Dlevel)
 }
 
 void
-printsimplex(const simplex &blob, std::ostream& SSt)
+printsimplex(const Notsimplex &blob, std::ostream& SSt)
 {
    const time_t Ctime = std::time(0);
    SSt << "\n===========Current g, g_UNC values, and status===========" << std::endl;
-   for (int j = 0; j < blob.vertices; j++) {
+   for (arma::uword j = 0; j < blob.n_vert; j++) {
       SSt << "vertex" << j << " on proc " << blob.vertex[j].ProcID
           << " = " << blob.vertex[j].value << " +/- "
           << blob.vertex[j].error << " : Status = "
           << blob.vertex[j].status << std::endl;
    }
-   for (int k = 0; k < MAXAUX; k++) {
-      SSt << "aux" << k << " on proc " << blob.aux[k].ProcID
-          << " = " << blob.aux[k].value << " +/- " << blob.aux[k].error
-          << " : Status = " << blob.aux[k].status << std::endl;
+   for (arma::uword k = 0; k < blob.fSize; k++) {
+      SSt << "auxR" << k << " on proc " << blob.auxR[k].ProcID
+          << " = " << blob.auxR[k].value << " +/- " << blob.auxR[k].error
+          << " : Status = " << blob.auxR[k].status << std::endl;
+   }
+   for (arma::uword k = 0; k < blob.fSize; k++) {
+      SSt << "aux2" << k << " on proc " << blob.aux2[k].ProcID
+          << " = " << blob.aux2[k].value << " +/- " << blob.aux2[k].error
+          << " : Status = " << blob.aux2[k].status << std::endl;
    }
 
    SSt << "==================================================="
@@ -240,9 +245,9 @@ gcalc(double &grFinal, double &guFinal, WORKER_status &WStatus,
 
    // weighing factor can be thought as tolerance
    // calculated as 1/A
-   A(0) = 5E-2;
-   A(1) = 4E2;
-   A(2) = 4e-6;
+   A(0) = 1;
+   A(1) = 5E2;
+   A(2) = 4e-5;
 
    // temp value to store the obj.fxn value for non-pair correlation function
    double gvalue;
@@ -1060,21 +1065,28 @@ PrintWsit(const WRK_situation Wsit, std::ofstream &outfile)
 // in-Wstat, return-Mcomm
 // CPN = current process number that is looping over in MAS
 MASTER_comand
-MASwork(const WORKER_status WSTAT, const int CPN, const simplex blob)
+MASwork(const WORKER_status WSTAT, const int CPN, const Notsimplex blob)
 {
    // really, there is no purpose to doing this, other than identifying the process
    // but this is also used for failsafe.
    bool IsCPN_aux = false;
 
-   for (int i = 0; i < blob.vertices; i++) {
-      if (blob.vertex[i].ProcID == CPN && blob.vertex[i].Pkind == auxil) {
+   for (arma::uword i = 0; i < blob.n_vert; i++) {
+      if (blob.vertex.at(i).ProcID == CPN && blob.vertex.at(i).Pkind == auxil) {
          IsCPN_aux = true;
          break;
       }
    }
 
-   for(int i = 0; i < MAXAUX; i++){
-      if (blob.aux[i].ProcID == CPN && blob.aux[i].Pkind == auxil) {
+   for(arma::uword i = 0; i < blob.fSize; i++){
+      if (blob.auxR.at(i).ProcID == CPN && blob.auxR.at(i).Pkind == auxil) {
+         IsCPN_aux = true;
+         break;
+      }
+   }
+
+   for(arma::uword i = 0; i < blob.fSize; i++){
+      if (blob.aux2.at(i).ProcID == CPN && blob.aux2.at(i).Pkind == auxil) {
          IsCPN_aux = true;
          break;
       }
@@ -1133,26 +1145,50 @@ MASwork(const WORKER_status WSTAT, const int CPN, const simplex blob)
 // outputs(pass by refernce):
 // blob-Wstat and ComEx of proc CPN is written
 void
-updateMWstat(const WORKER_status WST, const int CPN, simplex &blob)
+updateMWstat(const WORKER_status WST, const int CPN, Notsimplex &blob)
 {
    MASTER_comand MCM = MASwork(WST, CPN, blob);
 
-   for (int i = 0; i < blob.vertices; i++) {
-      if (blob.vertex[i].ProcID == CPN) {
-         blob.vertex[i].status = WST;
-         blob.vertex[i].ComEx = MCM;
+   for (arma::uword i = 0; i < blob.n_vert; i++) {
+      if (blob.vertex.at(i).ProcID == CPN) {
+         blob.vertex.at(i).status = WST;
+         blob.vertex.at(i).ComEx = MCM;
          return;
       }
    }
 
-   for (int i = 0; i < MAXAUX; i++) {
-      if (blob.aux[i].ProcID == CPN) {
-         blob.aux[i].status = WST;
-         blob.aux[i].ComEx = MCM;
+   for (arma::uword i = 0; i < blob.fSize; i++) {
+      if (blob.auxR.at(i).ProcID == CPN) {
+         blob.auxR.at(i).status = WST;
+         blob.auxR.at(i).ComEx = MCM;
          return;
       }
    }
+   for (arma::uword i = 0; i < blob.fSize; i++) {
+      if (blob.aux2.at(i).ProcID == CPN) {
+         blob.aux2.at(i).status = WST;
+         blob.aux2.at(i).ComEx = MCM;
+         return;
+      }
+   }
+
    GlobalPrintDebug("OH Crap. updateMWstat could not find the matching process number", 1);
+   std::ostringstream temp;
+   temp << "could not find CPN = " << CPN << std::endl
+        << "The current ProcID for each vertices are: " << std::endl;
+
+   
+   for(arma::uword i = 0; i < blob.n_vert; i++){
+      temp << "Vertex" << i << " Proc" << blob.vertex.at(i).ProcID << std::endl;
+   }
+   for (arma::uword i = 0; i < blob.fSize; i++) {
+      temp << "auxR" << i << " Proc" << blob.auxR.at(i).ProcID << std::endl;
+   }
+   for (arma::uword i = 0; i < blob.fSize; i++) {
+      temp << "aux2" << i << " Proc" << blob.aux2.at(i).ProcID << std::endl;
+   }
+
+   GlobalPrintDebug(temp.str(), 1);
 }
 
 // updateVALUEs
@@ -1166,20 +1202,27 @@ updateMWstat(const WORKER_status WST, const int CPN, simplex &blob)
 // outputs(pass by refernce):
 // blob-the simplex. value and error is updated here
 void
-updateVALUEs(const int CPN, const double gVALUE, const double gUNC, simplex &blob)
+updateVALUEs(const int CPN, const double gVALUE, const double gUNC, Notsimplex &blob)
 {
-   for (int i = 0; i < blob.vertices; i++) {
-      if (blob.vertex[i].ProcID == CPN) {
-         blob.vertex[i].value = gVALUE;
-         blob.vertex[i].error = gUNC;
+   for (arma::uword i = 0; i < blob.n_vert; i++) {
+      if (blob.vertex.at(i).ProcID == CPN) {
+         blob.vertex.at(i).value = gVALUE;
+         blob.vertex.at(i).error = gUNC;
          return;
       }
    }
 
-   for (int i = 0; i < MAXAUX; i++) {
-      if (blob.aux[i].ProcID == CPN) {
-         blob.aux[i].value = gVALUE;
-         blob.aux[i].error = gUNC;
+   for (arma::uword i = 0; i < blob.fSize; i++) {
+      if (blob.auxR.at(i).ProcID == CPN) {
+         blob.auxR.at(i).value = gVALUE;
+         blob.auxR.at(i).error = gUNC;
+         return;
+      }
+   }
+   for (arma::uword i = 0; i < blob.fSize; i++) {
+      if (blob.aux2.at(i).ProcID == CPN) {
+         blob.aux2.at(i).value = gVALUE;
+         blob.aux2.at(i).error = gUNC;
          return;
       }
    }
@@ -1187,36 +1230,48 @@ updateVALUEs(const int CPN, const double gVALUE, const double gUNC, simplex &blo
 }
 
 void
-SetVec(arma::vec &Tvec, const int dim, const int CPN, const simplex blob)
+SetVec(arma::vec &Tvec, const int CPN, const Notsimplex blob)
 {
-   for (int i = 0; i < blob.vertices; i++) {
+   for (arma::uword i = 0; i < blob.n_vert; i++) {
       if (blob.vertex[i].ProcID == CPN) {
-         for (int j = 0; j < dim; j++) {
-            Tvec(static_cast<arma::uword>(j)) = blob.vertex[i].coord[j];
+         for (arma::uword j = 0; j < blob.n_dim; j++) {
+            Tvec(static_cast<arma::uword>(j)) = blob.vertex[i].coord(j);
          }
          return;
       }
    }
 
-   for (int i = 0; i < MAXAUX; i++ ) {
-      if (blob.aux[i].ProcID == CPN) {
-         for (int j = 0; j < dim; j++) {
-            Tvec(static_cast<arma::uword>(j)) = blob.aux[i].coord[j];
+   for (arma::uword i = 0; i < blob.fSize; i++ ) {
+      if (blob.auxR.at(i).ProcID == CPN) {
+         for (arma::uword j = 0; j < blob.n_dim; j++) {
+            Tvec(static_cast<arma::uword>(j)) = blob.auxR.at(i).coord(j);
          }
          return;
       }
    }
+
+   for (arma::uword i = 0; i < blob.fSize; i++ ) {
+      if (blob.aux2.at(i).ProcID == CPN) {
+         for (arma::uword j = 0; j < blob.n_dim; j++) {
+            Tvec(static_cast<arma::uword>(j)) = blob.aux2.at(i).coord(j);
+         }
+         return;
+      }
+   }
+
+
+
    GlobalPrintDebug("OH Crap. SetVec could not find the matching process number", 1);
 }
 
 // this function checks the status of each vertex and
 // determines if ALL of the processors have returned error
 bool
-ChkErr(const simplex blob, bool III)
+ChkErr(const Notsimplex blob, bool III)
 {
    bool FAIL = true;
 
-   for (int i = 0; i < blob.vertices; i++) {
+   for (arma::uword i = 0; i < blob.n_vert; i++) {
       if (blob.vertex[i].status != error) {
          FAIL = false;
          break;
@@ -1225,8 +1280,14 @@ ChkErr(const simplex blob, bool III)
 
    // loop over AUX
    if (!III) {
-      for (int i = 0; i < MAXAUX; ++i) {
-         if (blob.aux[i].status != error) {
+      for (arma::uword i = 0; i < blob.fSize; ++i) {
+         if (blob.auxR[i].status != error) {
+            FAIL = false;
+            break;
+         }
+      }
+      for (arma::uword i = 0; i < blob.fSize; ++i) {
+         if (blob.aux2[i].status != error) {
             FAIL = false;
             break;
          }
@@ -1236,17 +1297,22 @@ ChkErr(const simplex blob, bool III)
 }
 
 MASTER_comand
-GetMcomm(const int CPN, const simplex blob)
+GetMcomm(const int CPN, const Notsimplex blob)
 {
-   for (int i = 0; i < blob.vertices; i++) {
-      if (blob.vertex[i].ProcID == CPN) {
-         return blob.vertex[i].ComEx;
+   for (arma::uword i = 0; i < blob.n_vert; i++) {
+      if (blob.vertex.at(i).ProcID == CPN) {
+         return blob.vertex.at(i).ComEx;
       }
    }
 
-   for (int i = 0; i < MAXAUX; i++) {
-      if (blob.aux[i].ProcID == CPN) {
-         return blob.aux[i].ComEx;
+   for (arma::uword i = 0; i < blob.fSize; i++) {
+      if (blob.auxR.at(i).ProcID == CPN) {
+         return blob.auxR.at(i).ComEx;
+      }
+   }
+   for (arma::uword i = 0; i < blob.fSize; i++) {
+      if (blob.aux2.at(i).ProcID == CPN) {
+         return blob.aux2.at(i).ComEx;
       }
    }
    GlobalPrintDebug("OH Crap. GetMcomm could not find the matching process number", 1);
@@ -1254,16 +1320,21 @@ GetMcomm(const int CPN, const simplex blob)
 }
 
 WORKER_status
-getPrevWstat(const simplex blob, int CPN) {
-   for (int i = 0; i < blob.vertices; i++) {
-      if (blob.vertex[i].ProcID == CPN) {
-         return blob.vertex[i].status;
+getPrevWstat(const Notsimplex blob, int CPN) {
+   for (arma::uword i = 0; i < blob.n_vert; i++) {
+      if (blob.vertex.at(i).ProcID == CPN) {
+         return blob.vertex.at(i).status;
       }
    }
 
-   for (int i = 0; i < MAXAUX; i++) {
-      if (blob.aux[i].ProcID == CPN) {
-         return blob.aux[i].status;
+   for (arma::uword i = 0; i < blob.fSize; i++) {
+      if (blob.auxR.at(i).ProcID == CPN) {
+         return blob.auxR.at(i).status;
+      }
+   }
+   for (arma::uword i = 0; i < blob.fSize; i++) {
+      if (blob.aux2.at(i).ProcID == CPN) {
+         return blob.aux2.at(i).status;
       }
    }
 
@@ -1272,16 +1343,21 @@ getPrevWstat(const simplex blob, int CPN) {
 }
 
 bool
-DetectChangeWstat(const simplex blob, const WORKER_status PWstat, int CPN)
+DetectChangeWstat(const Notsimplex blob, const WORKER_status PWstat, int CPN)
 {
-   for (int i = 0; i < blob.vertices; i++) {
-      if (blob.vertex[i].ProcID == CPN && blob.vertex[i].status != PWstat) {
+   for (arma::uword i = 0; i < blob.n_vert; i++) {
+      if (blob.vertex.at(i).ProcID == CPN && blob.vertex.at(i).status != PWstat) {
          return true;
       }
    }
 
-   for (int i = 0; i < MAXAUX; i++) {
-      if (blob.aux[i].ProcID == CPN && blob.aux[i].status != PWstat) {
+   for (arma::uword i = 0; i < blob.fSize; i++) {
+      if (blob.auxR.at(i).ProcID == CPN && blob.auxR.at(i).status != PWstat) {
+         return true;
+      }
+   }
+   for (arma::uword i = 0; i < blob.fSize; i++) {
+      if (blob.aux2.at(i).ProcID == CPN && blob.aux2.at(i).status != PWstat) {
          return true;
       }
    }
@@ -1322,6 +1398,77 @@ DoScript(std::string scriptStr){
 
    return 0;
 }
+
+void
+calcFrac(Notsimplex &blob){
+
+   //reinitialize the components
+   blob.yfCent = 0;
+   blob.yfLow = 0;
+   blob.yfSecHigh = 0;
+   blob.yfHigh = 0;
+   blob.yfR = 0;
+   blob.yf2 = 0;
+
+   blob.ufCent = 0;
+   blob.ufLow = 0;
+   blob.ufSecHigh = 0;
+   blob.ufHigh = 0;
+   blob.ufR = 0;
+   blob.uf2 = 0;
+
+   //index should be blob.fSize (right above fLow) to 
+   //blob.n_vert - 2*blob.fSize (right below SecHigh)
+   for (arma::uword i = blob.fSize;i < blob.n_vert - 2*blob.fSize; i++){
+      blob.yfCent += blob.vertex.at(i).value;
+   }
+   //take the average of the sum of yfCent
+   //the total number of vertex is all vertex not in any of the fractions
+   //i.e. 3*fSize
+   blob.yfCent = blob.yfCent / static_cast<double>(blob.n_vert - 3*blob.fSize);
+
+   for (arma::uword i = 0;i < blob.fSize; i++){
+      blob.yfLow += blob.vertex.at(i).value;
+   }
+   //take the average. number of vertex in fLow is fSize
+   blob.yfLow = blob.yfLow / static_cast<double>(blob.fSize);
+
+   for (arma::uword i = blob.n_vert - 2*blob.fSize; i < blob.n_vert - blob.fSize;i++){
+      blob.yfSecHigh += blob.vertex.at(i).value;
+   }
+   //take the average. number of vertex in fSecHigh is fSize
+   blob.yfSecHigh = blob.yfSecHigh / static_cast<double>(blob.fSize);
+ 
+   for (arma::uword i = blob.n_vert - blob.fSize; i < blob.n_vert; i++){
+      blob.yfHigh += blob.vertex.at(i).value;
+   }
+   //take the average. number of vertex in fHigh is fSize
+   blob.yfHigh = blob.yfHigh / static_cast<double>(blob.fSize);
+
+   for(arma::uword i = 0; i < blob.fSize; i++){
+      blob.yfR += blob.auxR.at(i).value;
+   }
+   //take the average. number of vertex in fR is fSize
+   blob.yfR = blob.yfR / static_cast<double>(blob.fSize);
+
+   for(arma::uword i = 0; i < blob.fSize; i++){
+      blob.yf2 += blob.aux2.at(i).value;
+   }
+   //take the average. number of vertex in f2 is fSize
+   blob.yf2 = blob.yf2 / static_cast<double>(blob.fSize);
+
+   std::stringstream whatever;
+   whatever << "The current fraction values are: " << std::endl
+            << "yfCent = " << blob.yfCent << " +/- " << blob.ufCent << std::endl
+            << "yfLow = " << blob.yfLow << " +/- " << blob.ufLow << std::endl
+            << "yfSecHigh = " << blob.yfSecHigh << " +/- " << blob.ufSecHigh << std::endl
+            << "yfHigh = " << blob.yfHigh << " +/- " << blob.ufHigh << std::endl
+            << "yfR = " << blob.yfR << " +/- " << blob.ufR << std::endl
+            << "yf2 = " << blob.yf2 << " +/- " << blob.uf2 << std::endl;
+   GlobalPrintDebug(whatever.str(), 5);
+
+}
+
 
 
 /*

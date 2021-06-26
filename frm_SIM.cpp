@@ -29,9 +29,10 @@ POINTcompare(point a, point b)
   storing the resulting point in aux[0]....sjs 6/25/09
 */
 void
-reflect(simplex *blob)
+reflect(Notsimplex *blob)
 {
-   int idim, status;
+   int status;
+   getbase(blob); //call getbase anyways to be safe
 
    // no one should call reflect() without knowing which point is worst,
    // and where the base is, but we'd better be sure
@@ -46,14 +47,24 @@ reflect(simplex *blob)
       getbase(blob);
    }
 
-   blob->aux[0].dim = blob->vertex[blob->highest].dim;  // just in case
+   //index for fHigh = blob->n_vert-blob.fSize
+   //P(high) + 2*( P(bar) - P(High) )
+   std::cout << "Reflected coord: " << '\t';
 
-   for (idim = 0; idim < blob->aux[0].dim; ++idim) {
-      blob->aux[0].coord[idim] = blob->vertex[blob->highest].coord[idim]
-         + 2.0 * (blob->base[idim] - blob->vertex[blob->highest].coord[idim]);
+   for(arma::uword i = 0; i < blob->fSize; i++){
+      for (arma::uword idim = 0; idim < blob->n_dim; ++idim) {
+         blob->auxR.at(i).coord(idim) = blob->vertex.at(i + blob->n_vert - blob->fSize).coord(idim)
+            + 2.0 * (blob->baseCent(idim) - blob->vertex.at(i + blob->n_vert - blob->fSize).coord(idim));
+
+         std::cout << blob->auxR.at(i).coord(idim) << '\t';
+      }
+      std::cout << std::endl;
+
+      blob->auxR.at(i).value = -1.0;
+      blob->auxR.at(i).error = -1.0;
    }
-   blob->aux[0].value = -1.0;
-   blob->aux[0].error = -1.0;
+
+
 }
 
 /*
@@ -61,10 +72,13 @@ reflect(simplex *blob)
   extends it farther, storing the resulting point in aux[1]....sjs 6/25/09
 */
 void
-extend(simplex *blob)
+extend(Notsimplex *blob)
 {
    // no one should call extend() without knowing which point is worst,
    // and where the base is, but we'd better be sure
+
+   getbase(blob); //call getbase anyways to be safe for calculations
+
    if (stale == blob->sort_status) {
       //XXX
       GlobalPrintDebug("Order2 called extend", 1);
@@ -76,14 +90,16 @@ extend(simplex *blob)
       getbase(blob);
    }
 
-   blob->aux[1].dim = blob->vertex[blob->highest].dim;  // just in case
+   for(arma::uword i = 0; i < blob->fSize; i++){
+      for (arma::uword idim = 0; idim < blob->n_dim; ++idim) {
+         blob->aux2.at(i).coord[idim] = blob->vertex.at(i + blob->n_vert - blob->fSize).coord(idim)
+            + 3.0 * (blob->baseCent(idim) - blob->vertex.at(i + blob->n_vert - blob->fSize).coord(idim));
 
-   for (int idim = 0; idim < blob->aux[1].dim; ++idim) {
-      blob->aux[1].coord[idim] = blob->vertex[blob->highest].coord[idim]
-         + 3.0 * (blob->base[idim] - blob->vertex[blob->highest].coord[idim]);
+      }
+      blob->aux2.at(i).value = -1.0;
+      blob->aux2.at(i).error = -1.0;
    }
-   blob->aux[1].value = -1.0;
-   blob->aux[1].error = -1.0;
+
    blob->aux_holds = extension;
 }
 
@@ -92,7 +108,7 @@ extend(simplex *blob)
   storing the resulting point in aux[1]....sjs 6/26/09
 */
 void
-contract(simplex *blob)
+contract(Notsimplex *blob)
 {
    // no one should call contract() without knowing which point is worst,
    // and where the base is, but we'd better be sure
@@ -107,14 +123,30 @@ contract(simplex *blob)
       getbase(blob);
    }
 
-   blob->aux[1].dim = blob->vertex[blob->highest].dim;  // just in case
+   getbase(blob);//call anyways to be safe
 
-   for (int idim = 0; idim < blob->aux[1].dim; ++idim) {
-      blob->aux[1].coord[idim] = blob->vertex[blob->highest].coord[idim]
-         + 0.5 * (blob->base[idim] - blob->vertex[blob->highest].coord[idim]);  // XXX original value = 0.5 new = 0.8
+   //P(High) + 0.5*( P(bar) - P(High) )
+   for(arma::uword i = 0; i < blob->fSize; i++){
+      std::cout << "contract(): PHighs are: ";
+      
+      for (arma::uword idim = 0; idim < blob->n_dim; ++idim) {
+         blob->aux2.at(i).coord(idim) = blob->vertex.at(i + blob->n_vert - blob->fSize).coord(idim)
+            + 0.5 * (blob->baseCent(idim) - blob->vertex.at(i + blob->n_vert - blob->fSize).coord(idim));
+         std::cout << blob->vertex.at(i + blob->n_vert - blob->fSize).coord(idim) << '\t';
+      }     
+      
+      std::cout << std::endl;
+      std::cout << "contract(): baseCent are: ";
+      for (arma::uword idim = 0; idim < blob->n_dim; ++idim) {
+         std::cout << blob->baseCent(idim) << '\t';
+      
+      }
+      std::cout << std::endl;
+
+      blob->aux2.at(i).value = -1.0;
+      blob->aux2.at(i).error = -1.0;
    }
-   blob->aux[1].value = -1.0;
-   blob->aux[1].error = -1.0;
+
    blob->aux_holds = contraction;
 }
 
@@ -123,10 +155,13 @@ contract(simplex *blob)
   best point...sjs 6/26/09
 */
 void
-collapse(simplex *blob)
+collapse(Notsimplex *blob)
 {
    // no one should call collapse() without knowing which point is best,
    // but we'd better be sure
+   //
+   getbase(blob); //call getbase anyways to be safe
+
    if (stale == blob->sort_status) {
       //XXX
       GlobalPrintDebug("Order2 called collapse", 1);
@@ -141,48 +176,20 @@ collapse(simplex *blob)
       getbase(blob);
    }
 
-   for (int ivert = 0; ivert < blob->vertices; ++ivert) {
-      if (ivert != blob->lowest) {
-         for (int idim = 0; idim < blob->vertex[ivert].dim; ++idim) {
-            blob->vertex[ivert].coord[idim] = blob->vertex[ivert].coord[idim]
-               + 0.5 * (blob->vertex[blob->lowest].coord[idim]  //XXX original value = 0.5 new = 0.8
-                        - blob->vertex[ivert].coord[idim]);
+   //these index is all the index other than lowest fraction
+   for (arma::uword ivert = blob->fSize; ivert < blob->n_vert; ++ivert) {
+         for (arma::uword idim = 0; idim < blob->n_dim; ++idim) {
+            blob->vertex.at(ivert).coord(idim) = blob->vertex.at(ivert).coord(idim)
+               + 0.5 * (blob->vertex.at(ivert - blob->fSize).coord(idim)
+                        - blob->vertex.at(ivert).coord(idim));
          }
-         blob->vertex[ivert].value = -1.0;
-         blob->vertex[ivert].error = -1.0;
-      }
+         blob->vertex.at(ivert).value = -1.0;
+         blob->vertex.at(ivert).error = -1.0;
    }
 
    blob->sort_status = stale;
    blob->reflect_status = stale;
    blob->aux_holds = none;
-}
-
-/*
-  slide will return a point that has been translated from start through
-  target by distance multiples of the distance between target and start.
-  ...sjs 6/23/09
-*/
-point
-slide(point start, point target, double distance)
-{
-   point finish;
-
-   if (start.dim != target.dim) {
-      std::fprintf(stderr, "slide: dimensionality of points do not match\n");
-//      exit(1);
-   }
-   finish.dim = start.dim;
-
-   for (int idim = 0; idim < finish.dim; ++idim) {
-      finish.coord[idim] = start.coord[idim]
-         + distance * (target.coord[idim] - start.coord[idim]);
-   }
-   finish.value = 0;
-   finish.error = 0;
-//   finish.status = undef;
-
-   return finish;
 }
 
 /*
@@ -193,7 +200,7 @@ slide(point start, point target, double distance)
   ...sjs 6/23/09
   sort by average. Does NOT account for any error when ordering
 */
-
+/*
 int
 order1(simplex *blob)
 {
@@ -241,51 +248,39 @@ order1(simplex *blob)
    blob->aux_holds = none;
 
    return 0;
-}
+}*/
 
 int
-order2(simplex *blob, bool reset)
+order2(Notsimplex *blob, bool reset)
 {
    // sort each point in order of blob->vertex from low to high
    // lowest index = lowest value (I think)
-   std::cout << "FRAME SIM TEST: blob->vertex[] BEFORE SORT: ";
-   for (int i = 0; i < blob->vertices; i++) {
+   std::cout << "FRAME SIM TEST: blob->vertex[].value BEFORE SORT: ";
+   for (arma::uword i = 0; i < blob->n_vert; i++) {
       std::cout << blob->vertex[i].value << ' ';
    }
    std::cout << std::endl;
 
-   std::cout << "FRAME SIM TEST: blob->vertex[] BEFORE SORT: ";
-   for (int i = 0; i < blob->vertices; i++) {
+   std::cout << "FRAME SIM TEST: blob->vertex[].ProcID BEFORE SORT: ";
+   for (arma::uword i = 0; i < blob->n_vert; i++) {
       std::cout << blob->vertex[i].ProcID << ' ';
    }
    std::cout << std::endl;
 
-   std::sort(blob->vertex, blob->vertex + blob->vertices, POINTcompare);
-   // look for lowest value
-   blob->lowest = 0;
-   // look for highest value
-   blob->highest = blob->vertices - 1;
-   // look for second-highest value
-   blob->sechigh = blob->vertices - 2;
+//   std::sort(blob->vertex, blob->vertex + blob->n_vert, POINTcompare);
+   std::sort(blob->vertex.begin(), blob->vertex.end(), POINTcompare);
 
-   std::cout << "FRAME SIM TEST  blob->vertex[] AFTER SORT: ";
-   for (int i = 0; i < blob->vertices; i++) {
+   std::cout << "FRAME SIM TEST  blob->vertex[].value AFTER SORT: ";
+   for (arma::uword i = 0; i < blob->n_vert; i++) {
       std::cout << blob->vertex[i].value << ' ';
    }
    std::cout << std::endl;
 
-   std::cout << "FRAME SIM TEST  blob->vertex[] AFTER SORT: ";
-   for (int i = 0; i < blob->vertices; i++) {
+   std::cout << "FRAME SIM TEST  blob->vertex[].ProcID AFTER SORT: ";
+   for (arma::uword i = 0; i < blob->n_vert; i++) {
       std::cout << blob->vertex[i].ProcID << ' ';
    }
    std::cout << std::endl;
-
-   std::cout << "FRAME SIM: Vert highest = " << blob->highest << std::endl;
-   std::cout << "FRAME SIM: Proc highest = " << blob->vertex[blob->highest].ProcID << std::endl;
-   std::cout << "FRAME SIM: Vert lowest = " << blob->lowest << std::endl;
-   std::cout << "FRAME SIM: Proc lowest = " << blob->vertex[blob->lowest].ProcID << std::endl;
-   std::cout << "FRAME SIM: Vert sechigh = " << blob->sechigh << std::endl;
-   std::cout << "FRAME SIM: Proc sechigh = " << blob->vertex[blob->sechigh].ProcID << std::endl;
 
    if (reset) {
       blob->sort_status = current;
@@ -296,12 +291,11 @@ order2(simplex *blob, bool reset)
    return 0;
 }
 
-// getbase finds the centroid of all points in a simplex except the worst
+// getbase finds the centroid of all fractions
 void
-getbase(simplex *blob)
+getbase(Notsimplex *blob)
 {
    if (blob->sort_status != current) {
-      //XXX
       GlobalPrintDebug("Order2 called getbase",1);
       int status = order2(blob, true);
       if (status < 0) {
@@ -310,29 +304,84 @@ getbase(simplex *blob)
       }
    }
 
-   for (int idim = 0; idim < blob->vertex[0].dim; ++idim) {
-      blob->base[idim] = 0.0;
-   }
+//XXX TODO take the propagation of error for the AVERAGE value for each fraction
 
-   // sum all of the points except the worst
+//reinitialize the components of each of the vectors, for obvious reasons
+         blob->baseCent.zeros();
+         blob->baseLow.zeros();
+         blob->baseHigh.zeros();
+         blob->baseSecHigh.zeros();
+         blob->yfCent = 0;
+         blob->yfLow = 0;
+         blob->yfSecHigh = 0;
+         blob->yfHigh = 0;
 
-   for (int ivert = 0; ivert < blob->vertices; ++ivert) {
-      if (ivert != blob->highest) {
-         for (int idim = 0; idim < blob->vertex[ivert].dim; ++idim) {
-            blob->base[idim] += blob->vertex[ivert].coord[idim];
-         }
+
+// calculate the bases of the swarm that is not the fHigh. These are just the sum
+   for (arma::uword i = 0;i < blob->n_vert - blob->fSize; i++){
+      for (arma::uword j = 0; j < blob->n_dim; j++){
+         blob->baseCent.at(j) += blob->vertex.at(i).coord(j);
       }
+      blob->yfCent += blob->vertex.at(i).value;
+   }
+// must divide by n_dim to get the actual base value
+// base of all vertex
+   std::cout << "The baseCent is: ";
+   for(arma::uword j = 0; j < blob->n_dim; j++){
+      blob->baseCent(j) = blob->baseCent(j) / static_cast<double>(blob->n_vert - blob->fSize);
+   }
+// calculate the base of the fLow, along with sum of the values.
+   for (arma::uword i = 0;i < blob->fSize; i++){
+      for (arma::uword j = 0; j < blob->n_dim; j++){
+         blob->baseLow(j) += blob->vertex.at(i).coord(j);
+      }
+      blob->yfLow += blob->vertex.at(i).value;
    }
 
-   // and divide by the number of vertices summed
-
-   std::ostringstream message("base is at ");
-   for (int idim = 0; idim < blob->vertex[0].dim; ++idim) {
-      blob->base[idim] /= (blob->vertices - 1);
-      message << blob->base[idim] << " ";
+   //calculate the average of baseLow
+// must divide by n_dim to get the actual base value
+// base of all vertex
+   for(arma::uword j = 0; j < blob->n_dim; j++){
+      blob->baseLow(j) = blob->baseLow(j) / static_cast<double>(blob->fSize);
    }
-   message << std::endl;
-   report(message.str(), simplexStatus);
+
+   //then calculate the average of yLow
+   blob->yfLow = blob->yfLow / static_cast<double>(blob->fSize);
+
+//sechigh is from blob.vertex[index] n_vert-1-fSize (upper) to n_vert-1-fSize-fSize
+//        //calculate the center and y(sum) of fSecHigh
+   for (arma::uword i = blob->n_vert-2*blob->fSize; i < blob->n_vert - blob->fSize;i++){
+      for (arma::uword j = 0; j < blob->n_dim; j++){
+         blob->baseSecHigh(j) += blob->vertex[i].coord(j);
+      }
+      blob->yfSecHigh += blob->vertex.at(i).value;
+   }
+   //then calculate the average of ySecHigh
+   blob->yfSecHigh = blob->yfSecHigh / static_cast<double>(blob->fSize);
+
+   //calculate the average of SecHigh
+// must divide by n_dim to get the actual base value
+// base of all vertex
+   for(arma::uword j = 0; j < blob->n_dim; j++){
+      blob->baseSecHigh(j) = blob->baseSecHigh(j) / static_cast<double>(blob->fSize);
+   }
+   
+   //highest is from indx n_vert-1 (upper) to n_vert-1-fSize
+   //calculate the center and y(sum) of fHigh
+   for (arma::uword i = blob->n_vert - blob->fSize; i < blob->n_vert; i++){
+      for (arma::uword j = 0; j < blob->n_dim; j++){
+         blob->baseHigh.at(j) += blob->vertex.at(i).coord(j);
+      }
+      blob->yfHigh += blob->vertex.at(i).value;
+   }
+   //then calculate the average of yHigh
+   blob->yfHigh = blob->yfHigh / static_cast<double>(blob->fSize);
+
+// must divide by n_dim to get the actual base value
+// base of all vertex
+   for(arma::uword i = 0; i < blob->n_dim; i++){
+      blob->baseHigh.at(i) = blob->baseHigh.at(i) / static_cast<double>(blob->fSize);
+   }
 }
 
 void
@@ -367,32 +416,73 @@ compare(point PntA, point PntB, double mult)
  Once the replacements happen, all of the aux points are not worth keeping
  so both is set to infected any time swap happens
 */
-void
-swapPoint(simplex &blob, int vN, int aN)
-{
-   point temp = blob.vertex[vN];
-   blob.vertex[vN] = blob.aux[aN];
-   blob.vertex[vN].Pkind = verte;  // change Pkind to vert
-   blob.aux[aN] = temp;
-   blob.aux[aN].Pkind = auxil;
 
-   std::cout << "FRAME Point vertex " << vN << " is replaced with aux " << aN << std::endl;
+int
+compare2(double PntA, double ErrA, double PntB, double ErrB, double mult)
+{
+   //XXX TODO FIX ErrA and ErrB is set to 0 for debugging purpose XXX TODO
+   ErrA = 0;
+   ErrB = 0;
+
+   // A > B w/o overlapping
+   if (PntA - mult*ErrA > PntB + mult*ErrB) {
+      return 1;
+   }
+
+   // A < B w/o overlapping
+   if (PntA + mult*ErrA < PntB - mult*ErrB) {
+      return 2;
+   }
+
+   // return this if error bar is overlapping
+   return 0;
 }
 
 
-//XXX THE ONLY FXN THAT MODIFIES ComEx & status OUTSIDE OF MASTER
 void
-resetRound(simplex &blob)
+swapPoint(Notsimplex &blob, int aN)
 {
-   if (blob.aux[1].status != undef) {
-      blob.aux[1].Pkind = auxil;  // change Pkind to aux
-      blob.aux[1].status = infected;  // keep it infected until new simulation starts
-      blob.aux[1].ComEx = contagious;  // keep it infected until new simulation starts
+
+   for(arma::uword i = 0; i<blob.fSize; i++ ){
+   point temp = blob.vertex.at(i + blob.n_vert - blob.fSize);
+      //if aN = 0, aux is auxR
+      if(aN == 0){
+         blob.vertex.at(i + blob.n_vert - blob.fSize) = blob.auxR.at(i);
+         blob.vertex.at(i + blob.n_vert - blob.fSize).Pkind = verte;  // change Pkind to vert
+         blob.auxR.at(i) = temp;
+         blob.auxR.at(i).Pkind = auxil;
+      }
+   
+      //if aN = 1, aux is aux2
+      if(aN == 1){
+         blob.vertex.at(i + blob.n_vert - blob.fSize) = blob.aux2.at(i);
+         blob.vertex.at(i + blob.n_vert - blob.fSize).Pkind = verte;  // change Pkind to vert
+         blob.aux2.at(i) = temp;
+         blob.aux2.at(i).Pkind = auxil;
+      }
+
    }
 
-   blob.aux[0].Pkind = auxil;  // change Pkind to aux->fail safe
-   blob.aux[0].status = infected;  // keep it infected until new simulation starts
-   blob.aux[0].ComEx = contagious;  // keep it infected until new simulation starts
+//   std::cout << "FRAME Point vertex " << vN << " is replaced with aux " << aN << std::endl;
+}
+
+
+void
+resetRound(Notsimplex &blob)
+{
+   for(arma::uword i = 0; i < blob.fSize; i++){
+      if (blob.aux2.at(i).status != undef) {
+         blob.aux2.at(i).Pkind = auxil;  // change Pkind to aux
+         blob.aux2.at(i).status = infected;  // keep it infected until new simulation starts
+         blob.aux2.at(i).ComEx = contagious;  // keep it infected until new simulation starts
+      }
+
+      if (blob.auxR.at(i).status != undef) {
+         blob.auxR.at(i).Pkind = auxil;  // change Pkind to aux->fail safe
+         blob.auxR.at(i).status = infected;  // keep it infected until new simulation starts
+         blob.auxR.at(i).ComEx = contagious;  // keep it infected until new simulation starts
+      }
+   }
    blob.sort_status = stale;   // probably, but maybe not
    blob.reflect_status = stale;
    blob.aux_holds = none;
@@ -404,8 +494,17 @@ resetRound(simplex &blob)
 // action is returned to be performed externally....sjs 6/24/09
 
 enum simplex_action
-optimize(simplex *blob, point **target, bool &SIMPswap, double mult)
+optimize(Notsimplex *blob, std::vector<int> &target, bool &SIMPswap, double mult)
 {
+   //clear the target vector
+   target.clear();
+
+   //set the size of target to fSize
+   //The only time the size of target is not fSize
+   //is during initializaiton. Hence, this vector will be 
+   //resized accordingly within the scope
+   target.resize(blob->fSize);
+
    // quit when all simplex edges are shorter than this tolerance
    // convergence criteria
    const double tolerance = 1.e-4;
@@ -428,9 +527,15 @@ optimize(simplex *blob, point **target, bool &SIMPswap, double mult)
 
       // first, check to make sure evaluation has begun at all vertices
 
-      for (int ivert = 0; ivert < blob->vertices; ++ivert) {
-         if (undef == blob->vertex[ivert].status) {
-            *target = &blob->vertex[ivert];
+      //change the size of the target vector for loop index in master()
+      //target IS NOW A VECTOR OF INTEGER(S)
+      //the size of target here is 1, just because this is targeting individual
+      //point in the vertex, not any of the aux.
+      for (arma::uword ivert = 0; ivert < blob->n_vert; ++ivert) {
+         if (undef == blob->vertex.at(ivert).status) {
+            target.resize(1);
+            target.at(0) = blob->vertex.at(ivert).ProcID;
+            
             std::stringstream messString;
             messString << __FILE__ << ' ' << __LINE__ << " initiated vertex "
                        << ivert;
@@ -440,8 +545,8 @@ optimize(simplex *blob, point **target, bool &SIMPswap, double mult)
       }
 
       // next, make sure we have values at each vertex
-      for (int ivert = 0; ivert < blob->vertices; ++ivert) {
-         if (pending == blob->vertex[ivert].status) {
+      for (arma::uword ivert = 0; ivert < blob->n_vert; ++ivert) {
+         if (pending == blob->vertex.at(ivert).status) {
 //            std::cout <<"FRAME  "  << __FILE__ << ' ' << __LINE__ << "vertex " 
 //                      << ivert << " is pending" << std::endl;
             return simplex_wait;
@@ -449,11 +554,11 @@ optimize(simplex *blob, point **target, bool &SIMPswap, double mult)
       }
 
       // next, make sure we have VALID values at each vertex
-      for (int ivert = 0; ivert < blob->vertices; ++ivert) {
-         if (blob->vertex[ivert].value < 0) {
+      for (arma::uword ivert = 0; ivert < blob->n_vert; ++ivert) {
+         if (blob->vertex.at(ivert).value < 0) {
             const time_t Ctime = std::time(0);
             std::cout <<"FRAME  " << __FILE__ << ' ' << __LINE__
-                      << "Proc " << blob->vertex[ivert].ProcID
+                      << "Proc " << blob->vertex.at(ivert).ProcID
                       << " -Vertex " << ivert
                       << " Does not have valid value yet "
                       << std::asctime( std::localtime(&Ctime) ) << std::endl;
@@ -476,13 +581,13 @@ optimize(simplex *blob, point **target, bool &SIMPswap, double mult)
 //	 std::cerr << "should have checked whether order changed, but didn't" << std::endl;
          // are we done yet?
          bool simplex_converged = true;
-         for (int ivert = 0; ivert < blob->vertices; ++ivert) {
-            for (int jvert = ivert+1; jvert < blob->vertices; ++jvert) {
+         for (arma::uword ivert = 0; ivert < blob->n_vert; ++ivert) {
+            for (arma::uword jvert = ivert+1; jvert < blob->n_vert; ++jvert) {
             //XXX put distance back to original place when debug is over!
                double distance = 0.;
-               for (int idim = 0; idim < blob->vertex[0].dim; ++idim) {
-                  distance += std::pow( (blob->vertex[ivert].coord[idim]
-                                  - blob->vertex[jvert].coord[idim])/blob->base[idim], 2.0);
+               for (arma::uword idim = 0; idim < blob->n_dim; ++idim) {
+                  distance += std::pow( (blob->vertex.at(ivert).coord(idim)
+                                  - blob->vertex.at(jvert).coord(idim))/blob->baseCent(idim), 2.0);
                }
                if (distance > std::pow(tolerance, 2.0)) {
                   simplex_converged = false;
@@ -491,7 +596,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap, double mult)
          //TODO debug and delete these print statements
             std::stringstream messString;
             messString << "distance = " << distance  << std::endl;
-            GlobalPrintDebug(messString.str(),5 );
+            GlobalPrintDebug(messString.str(),9);
             }
          }
          if (simplex_converged) {
@@ -509,25 +614,41 @@ optimize(simplex *blob, point **target, bool &SIMPswap, double mult)
          // calculate the reflected point
          reflect(blob);
          blob->reflect_status = current;
-         *target = &blob->aux[0];
-         if (undef == blob->aux[0].status || done == blob->aux[0].status) {
-            const time_t Ctime = std::time(0);
-            std::stringstream messString;
-            messString << __FILE__ << ' ' << __LINE__ << " initiated Refletion "
-                       << std::asctime( std::localtime(&Ctime) );
-            GlobalPrintDebug(messString.str(),5 );
 
+         //flags for return statemens in the coming loop
+         bool FLGinit = false;
+         bool FLGreinit = false;
+
+         //Only loop over upto fSize, since this is about one of the aux
+         for(arma::uword i = 0; i < blob->fSize;i++){
+            if (undef == blob->auxR.at(i).status || done == blob->auxR.at(i).status) {
+               const time_t Ctime = std::time(0);
+               std::stringstream messString;
+               messString << __FILE__ << ' ' << __LINE__ << " Proc" << blob->auxR.at(i).ProcID
+                          << " initiated Refletion " << std::asctime( std::localtime(&Ctime) );
+               GlobalPrintDebug(messString.str(),5 );
+               target.at(i) = blob->auxR.at(i).ProcID;
+               FLGinit = true;
+            }
+            else {  // something is already running in the reflection slot
+               const time_t Ctime = std::time(0);
+               std::stringstream messString;
+               messString << __FILE__ << ' ' << __LINE__ << " Proc" << blob->auxR.at(i).ProcID
+                       << " REinitiated Refletion "
+                       << std::asctime( std::localtime(&Ctime) );
+               GlobalPrintDebug(messString.str(),5 );
+               target.at(i) = blob->auxR.at(i).ProcID;
+               FLGreinit = true;
+            }
+         }
+         
+         if(FLGinit){
             return initiate;
          }
-         else {  // something is already running in the reflection slot
-            const time_t Ctime = std::time(0);
-            std::stringstream messString;
-            messString << __FILE__ << ' ' << __LINE__ << " REinitiated Refletion "
-                       << std::asctime( std::localtime(&Ctime) );
-            GlobalPrintDebug(messString.str(),5 );
-
+         if(FLGreinit){
             return restart;
          }
+
       }  // end if (blob->sort_status == stale)
 
       // at this point, we should have a valid reflection
@@ -536,24 +657,28 @@ optimize(simplex *blob, point **target, bool &SIMPswap, double mult)
 //         exit(1);
       }
       // and the calculation should be underway
-      if (undef == blob->aux[0].status) {
-         std::cerr << "optimize: why hasn't reflection started?" << std::endl;
+//      if (undef == blob->aux[0].status) {
+//         std::cerr << "optimize: why hasn't reflection started?" << std::endl;
 //         exit(1);
-      }
+//      }
 
       // but we can't do anything until we have a value for the reflection
-      if (pending == blob->aux[0].status) {
-         const time_t Ctime = std::time(0);
-         std::cout << "FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
+      for(arma::uword i = 0; i < blob->fSize; i++){
+         if (pending == blob->auxR.at(i).status) {
+            const time_t Ctime = std::time(0);
+            std::cout << "FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
                    << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
-         return simplex_wait;
-      }
-      if (blob->aux[0].value < 0) {  //ensure the valid value on aux[0] before anything
-         const time_t Ctime = std::time(0);
-         std::cout << "FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
+            return simplex_wait;
+         }    
+         if (blob->auxR.at(i).value < 0) {  //ensure the valid value on aux[0] before anything
+            const time_t Ctime = std::time(0);
+            std::cout << "FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
                    << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
-         return simplex_wait;
+            return simplex_wait;
+         }
       }
+
+//TODO calculate all the average value of the fractions here TODO
 
       //------------------------start comparisons---------------------//
       /*
@@ -578,15 +703,21 @@ optimize(simplex *blob, point **target, bool &SIMPswap, double mult)
       */
 
       //TODO TODO TODO XXX move to order or new fxn, eventually
+      
+
+      //call calcFrac so that all the yfrac values are ready
+      //should have valid value for all vertex at this point
+      
+      calcFrac(*blob);
 
       // compare highest and sechigh
-      int chk1 = compare(blob->vertex[blob->sechigh], blob->vertex[blob->highest], mult);
+      int chk1 = compare2(blob->yfSecHigh, blob->ufSecHigh, blob->yfHigh, blob->ufHigh, mult);
       if (0 == chk1) {
          std::cout << "FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
-                   << ' ' << blob->vertex[blob->sechigh].value << " +/- " 
-                   << blob->vertex[blob->sechigh].error << ' '
-                   << " ?< " << blob->vertex[blob->highest].value << " +/- "
-                   << blob->vertex[blob->highest].error << ' ';
+                   << ' ' << blob->yfSecHigh << " +/- " 
+                   << blob->ufSecHigh << ' '
+                   << " ?< " << blob->yfHigh << " +/- "
+                   << blob->ufHigh << ' ';
          const time_t Ctime = std::time(0);
          std::cout << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
          return simplex_wait;
@@ -598,29 +729,22 @@ optimize(simplex *blob, point **target, bool &SIMPswap, double mult)
       int chk4 = -1;  // used inside the for loop below
       bool chkT = false;  // used to indicate order change on lowest & sechigh
       bool chkT2 = false;  // used to indicate order change on highest point
-      for (int i = 0; i < blob->vertices; i++) {
          // check lowest point
-         if (i != blob->lowest) {
-            chk3 = compare(blob->vertex[blob->lowest], blob->vertex[i], mult);
-            if (1 == chk3) {
+         chk3 = compare2(blob->yfLow, blob->ufLow, blob->yfCent, blob->ufCent, mult);
+         if (1 == chk3) {
                chkT = true;
-            }
          }
-
          // check highest and sechigh point
-         if (i != blob->sechigh && i != blob->highest) {
-            chk2 = compare(blob->vertex[blob->sechigh], blob->vertex[i], mult);
-            chk4 = compare(blob->vertex[blob->highest], blob->vertex[i], mult);
-            if (chk2 == 2) {
-               chkT = true;
-            }
-            if (chk4 == 2) {
-               chkT2 = true;
-            }
+         chk2 = compare2(blob->yfSecHigh, blob->ufSecHigh, blob->yfCent, blob->ufCent, mult);
+         chk4 = compare2(blob->yfHigh, blob->ufHigh, blob->yfCent, blob->ufCent, mult);
+         if (chk2 == 2) {
+            chkT = true;
+         }
+         if (chk4 == 2) {
+            chkT2 = true;
          }
 
          // XXX if any of chk returns 0, wait
-         /*
            if(chk2 == 0 || chk3 ==0 || chk4 == 0){
            const time_t Ctime = std::time(0);
            std::cout << "FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
@@ -628,45 +752,48 @@ optimize(simplex *blob, point **target, bool &SIMPswap, double mult)
            << ' ' << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
            return simplex_wait;
            }
-         */
 
          //XXX DEBUG VERSION of above
          if (0 == chk2) {
             const time_t Ctime = std::time(0);
             std::cout << "FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait -- "
-                      << "chk2 == 0 : " << blob->vertex[blob->sechigh].value << " +/- " << blob->vertex[blob->sechigh].error
-                      << " <? " << blob->vertex[i].value << " +/- " << blob->vertex[i].error
+                      << "chk2 == 0 : " << blob->yfSecHigh
+                      << " +/- " << blob->ufSecHigh
+                      << " <? " << blob->yfCent << " +/- " << blob->ufCent
                       << ' ' << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
             return simplex_wait;
          }
          if (0 == chk3) {
             const time_t Ctime = std::time(0);
             std::cout << "FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait -- "
-                      << "chk3 == 0 : " << blob->vertex[blob->lowest].value << " +/- " << blob->vertex[blob->lowest].error
-                      << " >? " << blob->vertex[i].value << " +/- " << blob->vertex[i].error
+                      << "chk3 == 0 : " << blob->yfLow
+                      << " +/- " << blob->ufLow
+                      << " >? " << blob->yfCent << " +/- " << blob->ufCent
                       << ' ' << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
             return simplex_wait;
          }
          if (0 == chk4) {
             const time_t Ctime = std::time(0);
             std::cout << "FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait -- "
-                      << "chk4 == 0 : " << blob->vertex[blob->highest].value << " +/- " << blob->vertex[blob->highest].error
-                      << " <? " << blob->vertex[i].value << " +/- " << blob->vertex[i].error
+                      << "chk4 == 0 : " << blob->yfHigh << " +/- " 
+                      << blob->ufHigh
+                      << " <? " << blob->yfCent << " +/- " << blob->ufCent
                       << ' ' << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
             return simplex_wait;
          }
-      }  // end for(int i = 0; i < blob->vertices; i++)
-
-      if (chk1 == 1 || chkT2) {
+ 
+     if (chk1 == 1 || chkT2) {
          //XXX IMPORTANT! value changed and sechigh is no
          // longer sechigh. since aux[0] is ready at this point,
          // go ahead and reorder. Then compare with new highest.
          // reorder and compare R with NEW-highest
          order2(blob, false);
-         if (compare(blob->aux[0], blob->vertex[blob->highest], mult) == 2) {
+         if (compare2(blob->yfR, blob->ufR, blob->yfHigh, blob->ufHigh, mult) == 2) {
             GlobalPrintDebug("keeping reflected point-0", 5);
             SIMPswap = true;//tells calling fxn that simplex has moved
-            swapPoint(*blob, blob->highest, 0);
+            swapPoint(*blob, 0);
+            std::cerr << "before CheckProcID "<< __FILE__ << ' ' << __LINE__ << std::endl;
+            CheckProcID(*blob);
          }
          else {
             GlobalPrintDebug("chk1 == 1, and R is worse tha NEW-high", 5);
@@ -678,7 +805,6 @@ optimize(simplex *blob, point **target, bool &SIMPswap, double mult)
                    << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
          return simplex_wait;
       }
-
       if (chkT) {
          // Case where lowest is no longer lowest and sechigh is no longer sec high
          // Since these two only changes the comparison coming up, and not new point(s)
@@ -699,14 +825,20 @@ optimize(simplex *blob, point **target, bool &SIMPswap, double mult)
       //
       //
       // 2. reflected point is greater than lowest vale, but lower than 2nd highest
-      if (compare(blob->aux[0], blob->vertex[blob->lowest], mult) == 1 &&
-          compare(blob->aux[0], blob->vertex[blob->sechigh], mult) == 2) {
+      if (compare2(blob->yfR, blob->ufR, blob->yfLow, blob->ufLow, mult) == 1 &&
+          compare2(blob->yfR, blob->ufR, blob->yfSecHigh, blob->ufSecHigh, mult) == 2) {
 
          // keep the reflected point.
          GlobalPrintDebug("keeping relfected point-1",5 );
          SIMPswap = true;  // tells calling fxn that simplex has moved
-         swapPoint(*blob, blob->highest, 0);
+         
+         swapPoint(*blob, 0);
+         std::cerr << "before CheckProcID "<< __FILE__ << ' ' << __LINE__ << std::endl;
+         CheckProcID(*blob);
+
          resetRound(*blob);
+         std::cerr << "before CheckProcID "<< __FILE__ << ' ' << __LINE__ << std::endl;
+         CheckProcID(*blob);
 
          const time_t Ctime = std::time(0);
          std::cout << "FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
@@ -714,70 +846,94 @@ optimize(simplex *blob, point **target, bool &SIMPswap, double mult)
          return simplex_wait;
       }
       // 1. reflected value is less than or equal to lowest value
-      else if (compare(blob->aux[0], blob->vertex[blob->lowest], mult) == 2) {
+      else if (compare2(blob->yfR, blob->ufR, blob->yfLow, blob->ufLow, mult) == 2) {
          std::stringstream whatever;
-         whatever << blob->aux[0].value << " +/- " << blob->aux[0].error << " < "
-                  << blob->vertex[blob->lowest].value << " +/- " << blob->vertex[blob->lowest].error
-                  << " Exension? branch" << std::endl;
+         whatever << blob->yfR << " +/- " << blob->ufR << " < "
+                  << blob->yfLow << " +/- " << blob->ufLow
+                  << " Extension? branch" << std::endl;
          GlobalPrintDebug(whatever.str(), 5);
          // start a calculation of the extended point, if needed
          if (blob->aux_holds != extension) {
             extend(blob);
-            *target = &blob->aux[1];
-            if (undef == blob->aux[1].status || done == blob->aux[0].status) {
-               std::stringstream messString;
-               messString << __FILE__ << ' ' << __LINE__ << " Initiated extension";
-               GlobalPrintDebug(messString.str(),5 );
-               return initiate;
-            }
-            else {  // a simulation is currently running
-               std::stringstream messString;
-               messString << __FILE__ << ' ' << __LINE__ << " REinitiated extension";
-               GlobalPrintDebug(messString.str(),5 );
-               return restart;
-            }
-         }
+            bool FLGinit = false;
+            bool FLGreinit = false;
 
+            for(arma::uword i = 0; i < blob->fSize; i++){
+               target.at(i) = blob->aux2.at(i).ProcID;
+               if (undef == blob->aux2.at(i).status || done == blob->aux2.at(i).status) {
+                  std::stringstream messString;
+                  messString << __FILE__ << ' ' << __LINE__ << " Initiated extension";
+                  GlobalPrintDebug(messString.str(),5 );
+                  FLGinit = true;
+               }
+               else {  // a simulation is currently running
+                  std::stringstream messString;
+                  messString << __FILE__ << ' ' << __LINE__ << " REinitiated extension";
+                  GlobalPrintDebug(messString.str(),5 );
+                  FLGreinit = true;
+               }
+            }
+
+            if(FLGinit){return initiate;}
+            if(FLGreinit){return restart;}
+         }
          // at this point aux[1] should hold an extended point
          // and the calculation should be started
-         if (undef == blob->aux[1].status) {
-            std::cerr << "optimize: why hasn't extension started?" << std::endl;
+         for(arma::uword i = 0; i < blob->fSize; i++){
+            if (undef == blob->aux2.at(i).status) {
+               std::cerr << "optimize: why hasn't extension started?" << std::endl;
 //            exit(1);
-         }
+            }
+         
+            // wait for a value, if needed
+            if (pending == blob->aux2.at(i).status) {
+               const time_t Ctime = std::time(0);
+               std::cout <<"FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
+                         << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
+               return simplex_wait;
+            }
 
-         // wait for a value, if needed
-         if (pending == blob->aux[1].status) {
-            const time_t Ctime = std::time(0);
-            std::cout <<"FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
-                      << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
-            return simplex_wait;
-         }
-
-         if (blob->aux[1].value < 0) {
-            const time_t Ctime = std::time(0);
-            std::cout <<"FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
-                      << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
-            return simplex_wait;
+            if (blob->aux2.at(i).value < 0) {
+               const time_t Ctime = std::time(0);
+               std::cout <<"FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
+                         << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
+               return simplex_wait;
+            }
          }
 
          // at this point we know the VALID value at the extended point
-         if (compare(blob->aux[1], blob->aux[0], mult) == 2) {
+         if (compare2(blob->yf2, blob->uf2, blob->yfR, blob->ufR, mult) == 2) {
             // keep extended point
             GlobalPrintDebug("keeping extended point", 5);
             SIMPswap = true;  // tells calling fxn that simplex has moved
-            swapPoint(*blob, blob->highest, 1);
+            
+            swapPoint(*blob, 1);
+            std::cerr << "before CheckProcID "<< __FILE__ << ' ' << __LINE__ << std::endl;
+            CheckProcID(*blob);
+            
             resetRound(*blob);
+            std::cerr << "before CheckProcID "<< __FILE__ << ' ' << __LINE__ << std::endl;
+            CheckProcID(*blob);
+
             const time_t Ctime = std::time(0);
             std::cout << "FRAME  " << __FILE__ << ' ' << __LINE__ << " simplex wait "
                       << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
             return simplex_wait;
          }
-         else if (compare(blob->aux[1], blob->aux[0], mult) == 1) {
+         else if (compare2(blob->yf2, blob->uf2, blob->yfR, blob->ufR, mult) == 1) {
             // keep reflected point
             GlobalPrintDebug("keeping reflected point-2", 5);
             SIMPswap = true;  // tells calling fxn that simplex has moved
-            swapPoint(*blob, blob->highest, 0);
+
+            swapPoint(*blob, 0);
+            std::cerr << "before CheckProcID "<< __FILE__ << ' ' << __LINE__ << std::endl;
+            CheckProcID(*blob);
+            
             resetRound(*blob);
+            std::cerr << "before CheckProcID "<< __FILE__ << ' ' << __LINE__ << std::endl;
+            CheckProcID(*blob);
+
+            
             const time_t Ctime = std::time(0);
             std::cout << "FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
                       << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
@@ -791,58 +947,71 @@ optimize(simplex *blob, point **target, bool &SIMPswap, double mult)
          }
       }  // end else if (blob->aux[0].value <= blob->vertex[blob->lowest].value)
       //3.  if reflected point is higher than worst
-      else if (compare(blob->aux[0], blob->vertex[blob->highest], mult) == 1) {  //TODO 2 types of contraction??? see drawing
+      else if (compare2(blob->yfR, blob->ufR, blob->yfHigh, blob->ufHigh, mult) == 1) {  
+         //TODO 2 types of contraction??? see drawing
          // start a calculation of the contracted point if needed
          if (blob->aux_holds != contraction) {
             contract(blob);
-            *target = &blob->aux[1];
-            if (undef == blob->aux[1].status || done == blob->aux[1].status) {
-               std::stringstream messString;
-               messString << __FILE__ << ' ' << __LINE__ << " initiated Contraction";
-               GlobalPrintDebug(messString.str(),5 );
-               return initiate;
-            }
-            else {  // simulation is already running at this vertex
-               std::stringstream messString;
-               messString << __FILE__ << ' ' << __LINE__ << " REinitiated Contraction";
-               GlobalPrintDebug(messString.str(),5 );
-               return restart;
-            }
-         }
+            bool FLGinit = false;
+            bool FLGreinit = false;
 
+            for(arma::uword i = 0; i < blob->fSize; i++){
+            target.at(i) = blob->aux2.at(i).ProcID;
+               if (undef == blob->aux2.at(i).status || done == blob->aux2.at(i).status) {
+                  blob->aux2.at(i).Pstat = not_running;
+                  std::stringstream messString;
+                  messString << __FILE__ << ' ' << __LINE__ << " initiated Contraction";
+                  GlobalPrintDebug(messString.str(),5 );
+                  FLGinit = true;
+               }
+               else {  // simulation is already running at this vertex
+                  blob->aux2.at(i).Pstat = running;
+                  std::stringstream messString;
+                  messString << __FILE__ << ' ' << __LINE__ << " REinitiated Contraction";
+                  GlobalPrintDebug(messString.str(),5 );
+                  FLGreinit = true;
+               }
+            }
+
+            if(FLGinit){return initiate;}
+            if(FLGreinit){return restart;}
+         }
          // at this point the contraction should be valid, and running
-         if (undef == blob->aux[1].status) {
-            std::cerr << "optimize: why is contraction not running?" << std::endl;
+         for(arma::uword i = 0; i < blob->fSize; i++){
+            if (undef == blob->aux2[i].status) {
+               std::cerr << "optimize: why is contraction not running?" << std::endl;
 //            exit(1);
+            }
          }
-
          // but we may have to wait for a value
-         if (pending == blob->aux[1].status) {
-            const time_t Ctime = std::time(0);
-            std::stringstream messString;
-            messString <<"FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
-                       << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
-            GlobalPrintDebug(messString.str(),5 );
-            return simplex_wait;
-         }
-         // but we may have to wait for a VALID value
-         if (blob->aux[1].value < 0) {
-            const time_t Ctime = std::time(0);
-            std::cout <<"FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
-                      << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
-            return simplex_wait;
+         for(arma::uword i = 0; i < blob->fSize; i++){
+            if (pending == blob->aux2.at(i).status) {
+               const time_t Ctime = std::time(0);
+               std::stringstream messString;
+               messString <<"FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
+                        << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
+               GlobalPrintDebug(messString.str(),5 );
+               return simplex_wait;
+            }
+            // but we may have to wait for a VALID value
+            if (blob->aux2.at(i).value < 0) {
+               const time_t Ctime = std::time(0);
+               std::cout <<"FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
+                         << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
+               return simplex_wait;
+            }
          }
 
          // at this point we know the value at the contraction
-         int OOI = compare(blob->aux[1], blob->aux[0], mult);
-         int OOT = compare(blob->aux[1], blob->vertex[blob->highest], mult);
+         int OOI = compare2(blob->yf2, blob->uf2, blob->yfR, blob->ufR, mult);
+         int OOT = compare2(blob->yf2, blob->uf2, blob->yfHigh, blob->ufHigh, mult);
          if (0 == OOI || 0 == OOT) {
             const time_t Ctime = std::time(0);
             std::cout << "FRAME  " << __FILE__ << ' ' << __LINE__ << " simplex wait "
                       << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
             std::stringstream whatever;
-            whatever << blob->aux[0].value << " +/- " << blob->aux[0].error << " >  "
-                     << blob->vertex[blob->highest].value << " +/- " << blob->vertex[blob->highest].error
+            whatever << blob->yfR << " +/- " << blob->ufR << " >  "
+                     << blob->yfHigh << " +/- " << blob->ufHigh
                      << " Contraction1? branch"<< std::endl;
             GlobalPrintDebug(whatever.str(),5 );
             return simplex_wait;
@@ -853,8 +1022,15 @@ optimize(simplex *blob, point **target, bool &SIMPswap, double mult)
             // replace highests with contracted point
             GlobalPrintDebug("keeping contracted point 1",5 );
             SIMPswap = true;//tells calling fxn that simplex has moved
-            swapPoint(*blob, blob->highest, 1);
+  
+            swapPoint(*blob, 1);
+            std::cerr << "before CheckProcID "<< __FILE__ << ' ' << __LINE__ << std::endl;
+            CheckProcID(*blob);
+
             resetRound(*blob);
+            std::cerr << "before CheckProcID "<< __FILE__ << ' ' << __LINE__ << std::endl;
+            CheckProcID(*blob);
+
             const time_t Ctime = std::time(0);
             std::cout << "FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
                       << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
@@ -865,74 +1041,104 @@ optimize(simplex *blob, point **target, bool &SIMPswap, double mult)
             GlobalPrintDebug("collapsing-0", 5);
             collapse(blob);
             SIMPswap = true;  // tells calling fxn that simplex has moved
+
             resetRound(*blob);
+            std::cerr << "before CheckProcID "<< __FILE__ << ' ' << __LINE__ << std::endl;
+            CheckProcID(*blob);
             return shrink;
          }
       }
       // 4. reflected point is worse than the second worst, but better than highest
-      else if (compare(blob->aux[0], blob->vertex[blob->sechigh], mult) == 1
-               && compare(blob->aux[0], blob->vertex[blob->highest], mult) == 2) {
+      else if (compare2(blob->yfR, blob->ufR, blob->yfSecHigh, blob->ufSecHigh, mult) == 1
+               && compare2(blob->yfR, blob->ufR, blob->yfHigh, blob->ufHigh, mult) == 2) {
         // 2nd type of contraction??? see drawing
         // replace the highest point with reflected point
          if (blob->aux_holds != contraction) {
             GlobalPrintDebug("Half-step in contraction", 5);
             // swap highest and R for breif moment while contraction point is calculated
-            point temp = blob->vertex[blob->highest];
-            blob->vertex[blob->highest] = blob->aux[0];
+            std::vector<point> temp;
+            temp.resize(blob->fSize);
+            
+            for(arma::uword i = 0; i < blob->fSize; i++){
+                  temp.at(i) = blob->vertex.at(i + blob->n_vert - blob->fSize);
+                  blob->vertex.at(i + blob->n_vert - blob->fSize) = blob->auxR.at(i);   
+                  blob->auxR.at(i) = temp.at(i);
+               }
+            std::cerr << __FILE__ << ' ' << __LINE__ << " before CheckProcID" << std::endl;
+            CheckProcID(*blob);
+
             // Now find contracted point
             contract(blob);
-            *target = &blob->aux[1];
+
+            for(arma::uword i = 0; i < blob->fSize; i++){
+               target.at(i) = blob->aux2.at(i).ProcID;
+            }
+   
+            std::cerr << __FILE__ << ' ' << __LINE__ << " before CheckProcID" << std::endl;
+            CheckProcID(*blob);
+
             // swap back to original points so that simplex can find 
             // way back here on next cycle-Will swap for last time if new cycle comes back here
             // and attempt to replace/compare contracted point
-            blob->vertex[blob->highest] = temp;
-
-            if (undef == blob->aux[1].status || done == blob->aux[1].status) {
-               std::stringstream messString;
-               messString << __FILE__ << ' ' << __LINE__ << " initiated Contraction";
-               GlobalPrintDebug(messString.str(), 5);
-               return initiate;
+            for(arma::uword i = 0; i < blob->fSize; i++){
+//               blob->vertex.at(i + blob->n_vert - blob->fSize) = temp.at(i);
+               temp.at(i) = blob->auxR.at(i);
+               blob->auxR.at(i) = blob->vertex.at(i + blob->n_vert - blob->fSize);   
+               blob->vertex.at(i + blob->n_vert - blob->fSize) = temp.at(i);
+               std::cerr << __FILE__ << ' ' << __LINE__ << " before CheckProcID" << std::endl;
+               CheckProcID(*blob);
+            
+               if (undef == blob->aux2.at(i).status || done == blob->aux2.at(i).status) {
+                  blob->aux2.at(i).Pstat = not_running;
+                  std::stringstream messString;
+                  messString << __FILE__ << ' ' << __LINE__ << " initiated Contraction";
+                  GlobalPrintDebug(messString.str(), 5);
+                  return initiate;
+               }
+               else {
+                  // simulation is already running at this vertex
+                  blob->aux2.at(i).Pstat = running;
+                  std::stringstream messString;
+                  messString << __FILE__ << ' ' << __LINE__ << " REinitiated Contraction";
+                  GlobalPrintDebug(messString.str(), 5);
+                  return restart;
+               }
             }
-            else {
-               // simulation is already running at this vertex
-               std::stringstream messString;
-               messString << __FILE__ << ' ' << __LINE__ << " REinitiated Contraction";
-               GlobalPrintDebug(messString.str(), 5);
-               return restart;
-            }
+         
          }
 
          // at this point the contraction should be valid, and running
-         if (undef == blob->aux[1].status) {
-            std::cerr << "optimize: why is contraction not running?" << std::endl;
+         for(arma::uword i = 0; i < blob->fSize; i++){
+            if (undef == blob->aux2.at(i).status) {
+               std::cerr << "optimize: why is contraction not running?" << std::endl;
 //            exit(1);
-         }
-
+            }
          // but we may have to wait for a value
-         if (pending == blob->aux[1].status) {
-            const time_t Ctime = std::time(0);
-            std::cout <<"FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
-                      << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
-            return simplex_wait;
-         }
-         // but we may have to wait for a VALID value
-         if (blob->aux[1].value < 0) {
-            const time_t Ctime = std::time(0);
-            std::cout <<"FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
-                      << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
-            return simplex_wait;
+            if (pending == blob->aux2.at(i).status) {
+               const time_t Ctime = std::time(0);
+               std::cout <<"FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
+                         << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
+               return simplex_wait;
+               }
+               // but we may have to wait for a VALID value
+               if (blob->aux2.at(i).value < 0) {
+               const time_t Ctime = std::time(0);
+               std::cout <<"FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
+                         << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
+               return simplex_wait;
+            }
          }
 
-         int OOI = compare(blob->aux[1], blob->aux[0], mult);
+         int OOI = compare2(blob->yf2, blob->uf2, blob->yfR, blob->ufR, mult);
          if (0 == OOI) {
             // error bar is overlapping
             const time_t Ctime = std::time(0);
             std::cout <<"FRAME  "<< __FILE__ << ' ' << __LINE__ << " simplex wait "
                       << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
             std::stringstream whatever;
-            whatever << blob->vertex[blob->sechigh].value << blob->vertex[blob->sechigh].error
-                     << " < " << blob->aux[0].value << " +/- " << blob->aux[0].error << " < " 
-                     <<  blob->vertex[blob->highest].value << " +/- "<< blob->vertex[blob->highest].error
+            whatever << blob->yfSecHigh << " +/- "  << blob->ufSecHigh
+                     << " < " << blob->yf2 << " +/- " << blob->uf2 << " < " 
+                     <<  blob->yfR << " +/- "<< blob->ufR
                      << " \nContraction2? branch"<< std::endl;
             GlobalPrintDebug(whatever.str(), 5);
             return simplex_wait;
@@ -942,8 +1148,8 @@ optimize(simplex *blob, point **target, bool &SIMPswap, double mult)
          // then reflection will infinitely repeat (theoretically)
          // NOW replacing old highest with NEW highest--old H > new H
          // Also, the error bar comparison already happened on OOI
-         swapPoint(*blob, blob->highest, 0);
-         int OOT = compare(blob->aux[1], blob->vertex[blob->highest], mult);
+         swapPoint(*blob, 0);
+         int OOT = compare2(blob->yf2, blob->uf2, blob->yfHigh, blob->ufHigh, mult);
          // NOW old high is replaced by aux[0]--VALUE OF aux[0] is the NEW high
 
          // at this point we know the value at the contraction
@@ -952,7 +1158,7 @@ optimize(simplex *blob, point **target, bool &SIMPswap, double mult)
             // keep contracted C < NEW H
             GlobalPrintDebug("keeping contracted point 2", 5);
             SIMPswap = true;  // tells calling fxn that simplex has moved
-            swapPoint(*blob, blob->highest, 1);
+            swapPoint(*blob, 1);
             resetRound(*blob);
 
             const time_t Ctime = std::time(0);

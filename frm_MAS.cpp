@@ -21,7 +21,7 @@ verbosity outputLevel;
 
 
 void
-MASTER(int id, int P, arma::mat inP, double mult)
+MASTER(int id, int Proc, arma::mat inP, double mult)
 {
    // rows and columns will be cast to int later
    assert(inP.n_rows < static_cast<arma::uword>(std::numeric_limits<int>::max()));
@@ -42,8 +42,9 @@ MASTER(int id, int P, arma::mat inP, double mult)
    WORKER_status Wtemp;  // this is used for place holder for receive Wstat
 
    // declare simplex-related variables
-   point *target = 0;  // target siimplex point of action
-   simplex blob;  // where simplex info is
+//   point *target = 0;  // target siimplex point of action
+   std::vector<int> target;  // vector of index/procID for point of action
+   Notsimplex blob;  // where complex info is
    enum simplex_action task = nothingyet;
    outputLevel = optimization;
 //   outputLevel = debug;
@@ -52,42 +53,91 @@ MASTER(int id, int P, arma::mat inP, double mult)
    blob.aux_holds = none;
    blob.age = 0;
 
-   // initialize simplex
-   blob.vertices = static_cast<int>(inP.n_rows);
-   std::cout << "FRAME: This is blob.vertex: " << blob.vertices << std::endl;
+   //XXX initialize Notsimplex
 
-   for (int ivert = 0; ivert < blob.vertices; ++ivert) {
-      blob.vertex[ivert].dim = static_cast<int>(inP.n_cols);
-      blob.vertex[ivert].value = -1.0;
-      blob.vertex[ivert].error = -1.0;
-      blob.vertex[ivert].status = undef;
-      blob.vertex[ivert].PointID = ivert;
-      blob.vertex[ivert].ProcID  = ivert + 1;
-      blob.vertex[ivert].VertID = ivert;
-      blob.vertex[ivert].orderID = ivert;
-      blob.vertex[ivert].overlap = true;
-      blob.vertex[ivert].Pkind = verte;
-      blob.vertex[ivert].ComEx = nothing;
+   //set n_dim
+   blob.n_dim = inP.n_cols;
+
+   // get fSize
+   blob.fSize = (inP.n_rows/(inP.n_cols+1));
+
+   //set the size of vertex vector = n_vert
+   blob.vertex.resize(inP.n_rows);
+ 
+  //Set the size of aux vectors
+   blob.auxR.resize(blob.fSize);
+   blob.aux2.resize(blob.fSize);
+ 
+   //Set the size of mid-point (centroid) coord
+   blob.baseLow.zeros(inP.n_cols);
+   blob.baseSecHigh.zeros(inP.n_cols);
+   blob.baseHigh.zeros(inP.n_cols);
+   blob.baseCent.zeros(inP.n_cols);
+   
+   //Set the size of coord vectors
+   for(arma::uword i = 0; i < inP.n_rows; i++){
+      blob.vertex[i].coord.zeros(inP.n_cols);
    }
 
-   for (int ivert = 0; ivert < MAXAUX; ++ivert) {
+   for(arma::uword i = 0; i < blob.fSize; i++){
+      blob.auxR[i].coord.zeros(inP.n_cols);
+   }
+
+   for(arma::uword i = 0; i < blob.fSize; i++){
+      blob.aux2[i].coord.zeros(inP.n_cols);
+   }
+
+   blob.n_vert = inP.n_rows;
+   std::cout << "FRAME: blob.n_vert =  " << blob.n_vert << std::endl;
+
+   for (arma::uword ivert = 0; ivert < blob.n_vert; ++ivert) {
+      blob.vertex.at(ivert).dim = inP.n_cols;
+      blob.vertex.at(ivert).value = -1.0;
+      blob.vertex.at(ivert).error = -1.0;
+      blob.vertex.at(ivert).status = undef;
+      blob.vertex.at(ivert).PointID = static_cast<int>(ivert);
+      blob.vertex.at(ivert).ProcID  = static_cast<int>(ivert + 1);
+      blob.vertex.at(ivert).VertID = static_cast<int>(ivert);
+      blob.vertex.at(ivert).orderID = static_cast<int>(ivert);
+      blob.vertex.at(ivert).overlap = true;
+      blob.vertex.at(ivert).Pkind = verte;
+      blob.vertex.at(ivert).ComEx = nothing;
+   }
+
+   for (arma::uword ivert = 0; ivert < blob.fSize; ++ivert) {
       // initialize the coord for aux. B/c it will not have
       // any coord at the beginning of the program and will
       // spit/print out garbege
-      for (arma::uword j = 0; j < inP.n_cols; j++) {
-         blob.aux[ivert].coord[j] = 0;
-      }
-      blob.aux[ivert].dim = static_cast<int>(inP.n_cols);
-      blob.aux[ivert].value = -1.0;
-      blob.aux[ivert].error = -1.0;
-      blob.aux[ivert].status = undef;
-      blob.aux[ivert].PointID = ivert;
-      blob.aux[ivert].ProcID = blob.vertices + ivert +1;
-      blob.aux[ivert].VertID = 0;
-      blob.aux[ivert].orderID = -1;
-      blob.aux[ivert].overlap = true;
-      blob.aux[ivert].Pkind = auxil;
-      blob.aux[ivert].ComEx = nothing;
+      blob.auxR.at(ivert).dim = inP.n_cols;
+      blob.auxR.at(ivert).value = -1.0;
+      blob.auxR.at(ivert).error = -1.0;
+      blob.auxR.at(ivert).status = undef;
+      blob.auxR.at(ivert).PointID = static_cast<int>(ivert);
+      blob.auxR.at(ivert).ProcID = static_cast<int>(blob.n_vert + ivert + 1);
+      blob.auxR.at(ivert).VertID = 0;
+      blob.auxR.at(ivert).orderID = -1;
+      blob.auxR.at(ivert).overlap = true;
+      blob.auxR.at(ivert).Pkind = auxil;
+      blob.auxR.at(ivert).Pstat = not_running;
+      blob.auxR.at(ivert).ComEx = nothing;
+   }
+
+   for (arma::uword ivert = 0; ivert < blob.fSize; ++ivert) {
+      // initialize the coord for aux. B/c it will not have
+      // any coord at the beginning of the program and will
+      // spit/print out garbege
+      blob.aux2.at(ivert).dim = inP.n_cols;
+      blob.aux2.at(ivert).value = -1.0;
+      blob.aux2.at(ivert).error = -1.0;
+      blob.aux2.at(ivert).status = undef;
+      blob.aux2.at(ivert).PointID = static_cast<int>(ivert);
+      blob.aux2.at(ivert).ProcID = static_cast<int>(blob.n_vert + blob.fSize + ivert + 1);
+      blob.aux2.at(ivert).VertID = 0;
+      blob.aux2.at(ivert).orderID = -1;
+      blob.aux2.at(ivert).overlap = true;
+      blob.aux2.at(ivert).Pkind = auxil;
+      blob.aux2.at(ivert).Pstat = not_running;
+      blob.aux2.at(ivert).ComEx = nothing;
    }
 
    GLOBAL_debuglog.open("MASTERlog.out");  // open the master log file
@@ -97,7 +147,6 @@ MASTER(int id, int P, arma::mat inP, double mult)
    MASlog << "======Starting initialization...======" << std::endl;
    IsItInit = true;
 
-   //XXX test message:
    {
       std::ostringstream Mstring;
       Mstring << "This is the inP for MASTER process:\n" << inP << std::endl;
@@ -108,7 +157,7 @@ MASTER(int id, int P, arma::mat inP, double mult)
    // actual parameters to each worker processors
    // note: dimension is only sent once to all processors including aux.
    int temp_dim = static_cast<int>(inP.n_cols);
-   for (int i = 0; i < P-1; i++) {
+   for (int i = 0; i < Proc-1; i++) {
       std::ostringstream Mstring;
       Mstring    << "MASTER = proc" << id <<  ": dimension "
                  << " to proc "<< i+1;
@@ -120,7 +169,7 @@ MASTER(int id, int P, arma::mat inP, double mult)
 
    // send initialization messages
    arma::vec tempvec(inP.n_cols);
-   for (int i = 0; i < blob.vertices; i++) {
+   for (arma::uword i = 0; i < blob.n_vert; i++) {
       {
          std::ostringstream Mstring;
          Mstring    << "MASTER = proc" << id <<  ": Sending MASTER_command = "
@@ -130,10 +179,10 @@ MASTER(int id, int P, arma::mat inP, double mult)
 
       // send start message
       PrintDebug("Now sending Mcomm = start", MASlog, 9);
-      MPI_Send(&Mcomm, 1, MPI_INT, blob.vertex[i].ProcID, 1, MPI_COMM_WORLD);
+      MPI_Send(&Mcomm, 1, MPI_INT, blob.vertex.at(i).ProcID, 1, MPI_COMM_WORLD);
       PrintDebug("Done sending above", MASlog, 9);
 
-      tempvec = inP.row(static_cast<arma::uword>(i)).t();
+      tempvec = inP.row(i).t();
 
       PrintDebug("Now sending coordinates", MASlog, 9);
       MPI_Send(tempvec.memptr(), temp_dim, MPI_DOUBLE, blob.vertex[i].ProcID, 2, MPI_COMM_WORLD);//[A2]
@@ -141,7 +190,7 @@ MASTER(int id, int P, arma::mat inP, double mult)
 
       // convert armadillo row vec to an array for simplex part of the code
       for(arma::uword j = 0; j < inP.n_cols; j++) {
-         blob.vertex[i].coord[j] = tempvec(j);
+         blob.vertex.at(i).coord(j) = tempvec(j);
       }
    }
 
@@ -150,9 +199,9 @@ MASTER(int id, int P, arma::mat inP, double mult)
       std::ostringstream Mstring;
       Mstring << "\n###############CHECKING STATEMENTS FOR INPUTS##################" << std::endl;
       Mstring << "Here are the print out of the blob.vertex[i].coord[j]" << std::endl;
-      for (int i = 0; i < blob.vertices; i++) {
+      for (arma::uword i = 0; i < blob.n_vert; i++) {
          for (arma::uword j = 0; j < inP.n_cols; j++) {
-            Mstring << blob.vertex[i].coord[j] << "\t";
+            Mstring << blob.vertex.at(i).coord(j) << "\t";
          }
          Mstring << "\n";
       }
@@ -164,11 +213,14 @@ MASTER(int id, int P, arma::mat inP, double mult)
       std::ostringstream Mstring;
       Mstring << "\n###############CHECKING STATEMENTS FOR ProcID##################" << std::endl;
       Mstring << "Here are the print out of the blob.vertex[i].ProcID" << std::endl;
-      for (int i = 0; i < blob.vertices; i++) {
-         Mstring << "vertex " << i << ": ProcID = " << blob.vertex[i].ProcID << std::endl;
+      for (arma::uword i = 0; i < blob.n_vert; i++) {
+         Mstring << "vertex " << i << ": ProcID = " << blob.vertex.at(i).ProcID << std::endl;
       }
-      for (int i = 0; i < MAXAUX; i++) {
-         Mstring << "aux "<< i << ": ProcID = " <<blob.aux[i].ProcID << std::endl;
+      for (arma::uword i = 0; i < blob.fSize; i++) {
+         Mstring << "auxR "<< i << ": ProcID = " <<blob.auxR.at(i).ProcID << std::endl;
+      }
+      for (arma::uword i = 0; i < blob.fSize; i++) {
+         Mstring << "aux2 "<< i << ": ProcID = " <<blob.aux2.at(i).ProcID << std::endl;
       }
       PrintDebug(Mstring.str(), MASlog, 5);
    }
@@ -179,14 +231,14 @@ MASTER(int id, int P, arma::mat inP, double mult)
              << "MASTER = proc " << id << std::endl;
 
    // Receive the status from initialization
-   for (int i = 0; i < blob.vertices; i++) {
+   for (arma::uword i = 0; i < blob.n_vert; i++) {
       std::ostringstream Mstring1;
       std::ostringstream Mstring2;
 
       Mstring1 << "Receiving from proc " << i+1 << std::endl;
       PrintDebug(Mstring1.str(), MASlog, 9);
 
-      MPI_Recv(&Wtemp, 1, MPI_INT, i+1, MPI_ANY_TAG, MPI_COMM_WORLD, &StatMPI);
+      MPI_Recv(&Wtemp, 1, MPI_INT, static_cast<int>(i+1), MPI_ANY_TAG, MPI_COMM_WORLD, &StatMPI);
       MPI_Get_count(&StatMPI, MPI_INT, &CountMPI);
 
       Mstring2  << "Recieved Wstat = " << Wtemp
@@ -205,7 +257,7 @@ MASTER(int id, int P, arma::mat inP, double mult)
       Mcomm = stop;
       std::cout << "FRAME MASTER ERROR: error returned by ALL processors at setup." << std::endl;
       PrintDebug( "MASTER ERROR: error returned by ALL processors at setup.", MASlog, 1);
-      for (int i = 0; i < P-1; i++) {
+      for (int i = 0; i < Proc-1; i++) {
          std::ostringstream Mstring;
          Mstring    << "MASTER: Sending MASTER_command stop-" << Mcomm
                     << " to proc "<< i+1 << std::endl;
@@ -225,7 +277,7 @@ MASTER(int id, int P, arma::mat inP, double mult)
       // ask question to each processor
       // and update status in UpdateWstat
       // This only loops over Process (Rank) number
-      for(int Pnum = 1; Pnum < P; Pnum++) {  //loop over Processor ID
+      for(int Pnum = 1; Pnum < Proc; Pnum++) {  //loop over Processor ID
          WORKER_status PREV_wstat = getPrevWstat(blob, Pnum);  // previous status: before recv. Check one by one
          std::ostringstream Mstring1;
          std::ostringstream Mstring2;
@@ -259,6 +311,14 @@ MASTER(int id, int P, arma::mat inP, double mult)
          PrintDebug(MstringR3.str(), MASlog, 9);
 
          updateMWstat(Wtemp, Pnum, blob);
+/*
+         {//XXX test message
+            std::ostringstream Mstring;
+            Mstring << "Current Proc number = " << Pnum << '\n'
+                       << "Wtemp = " << Wtemp << std::endl;
+            PrintDebug(Mstring.str(), MASlog, 1);
+         }
+*/
          if (DetectChangeWstat(blob, PREV_wstat, Pnum)) {
             std::ostringstream SCWstr;
             const time_t Ctime = std::time(0);
@@ -276,7 +336,7 @@ MASTER(int id, int P, arma::mat inP, double mult)
       if (ChkErr(blob, IsItInit)) {
          Mcomm = stop;
          std::cout << "FRAME MASTER ERROR: error returned by ALL processors." << std::endl;
-         for (int i = 0; i < P-1; i++) {
+         for (int i = 0; i < Proc-1; i++) {
             std::cout << "FRAME MASTER: Sending MASTER_command = " << Mcomm
                       << " to proc "<< i << std::endl;
             MPI_Send(&Mcomm, 1, MPI_INT, i+1, 16, MPI_COMM_WORLD);
@@ -285,14 +345,39 @@ MASTER(int id, int P, arma::mat inP, double mult)
          done_prog = true;
          break;
       }
+   
+      //XXX test message
+      {
+         std::ostringstream Mstring;
+               Mstring << "The current Mcomm set to each process are:" << std::endl;
+         for(arma::uword i = 0; i < blob.n_vert; i++){
+               Mstring << "vertex" << i << '\t' << "Proc" << blob.vertex.at(i).ProcID<< '\t'
+                       <<  "Mcomm = " << blob.vertex.at(i).ComEx << std::endl;
+         }
+         for(arma::uword i = 0; i < blob.fSize; i++){
+               Mstring << "auxR_" << i << '\t' << "Proc" << blob.auxR.at(i).ProcID<< '\t'
+                       <<  "Mcomm = " << blob.auxR.at(i).ComEx << std::endl;
+         }
+         for(arma::uword i = 0; i < blob.fSize; i++){
+               Mstring << "aux2_" << i << '\t' << "Proc" << blob.aux2.at(i).ProcID<< '\t'
+                       <<  "Mcomm = " << blob.aux2.at(i).ComEx << std::endl;
+         }
+         PrintDebug(Mstring.str(), MASlog, 9);
+      }
+
 
       PrintDebug("So far, not 'all error'. \n starting optimize", MASlog, 8);
 
 ////////////////////////////////////////////////////////////////////////
 
-      target = 0;
-      task = optimize(&blob, &target, DoIprint1, mult);
-//      MASlog << "task = "  << task << std::endl;
+      std::cerr << __FILE__ << ' ' << __LINE__ << " before CheckProcID" << std::endl;
+      CheckProcID(blob);
+
+      task = optimize(&blob, target, DoIprint1, mult);
+
+      std::cerr << __FILE__ << ' ' << __LINE__ << " before CheckProcID" << std::endl;
+      CheckProcID(blob);
+
       switch (task) {
       case initiate:
       case restart:
@@ -304,44 +389,84 @@ MASTER(int id, int P, arma::mat inP, double mult)
            This is the first time the aux processes are initiated
            also, send the new parameters to the starting processor
            and it SHOULD NOT touch the currently running simulations
+           uses both ProcID and Pstat to determine wether the vertex needs
+           to initiate or reinitiate
+           loops over all processors
          */
-         if (initiate == task) {
-            target->ComEx = start;
-            std::ostringstream Mstring;
-            Mstring << "Processor" << target->ProcID << " needs to initiate.";
-            PrintDebug(Mstring.str(), MASlog, 5);
-         }
-
-         if (restart == task) {
-            target->ComEx = reinitiate;
-//            target->status = pending;
-            std::ostringstream Mstring;
-            Mstring << "Processor" << target->ProcID << " needs to restart.";
-            PrintDebug(Mstring.str(), MASlog, 5);
-         }
-
+            for(arma::uword i = 0; i < blob.n_vert; i++){
+               for(arma::uword j = 0; j < target.size(); j++){
+                  if(blob.vertex.at(i).ProcID == target.at(j) && blob.vertex.at(i).Pstat == not_running){
+                     blob.vertex.at(i).ComEx = start;
+                     std::ostringstream Mstring;
+                     Mstring << "Processor" << blob.vertex.at(i).ProcID << " needs to initiate.";
+                     PrintDebug(Mstring.str(), MASlog, 5);
+                  }
+                  if(blob.vertex.at(i).ProcID == target.at(j) && blob.vertex.at(i).Pstat == running){
+                     blob.vertex.at(i).ComEx = reinitiate;
+                     std::ostringstream Mstring;
+                     Mstring << "Processor" << blob.vertex.at(i).ProcID << " needs to reinitiate.";
+                     PrintDebug(Mstring.str(), MASlog, 5);
+                  }
+               }
+            }
+            for(arma::uword i = 0; i < blob.fSize; i++){
+               for(arma::uword j = 0; j < target.size(); j++){
+                  if(blob.auxR.at(i).ProcID == target.at(j) && blob.auxR.at(i).Pstat == not_running){
+                     blob.auxR.at(i).ComEx = start;
+                     std::ostringstream Mstring;
+                     Mstring << "Processor" << blob.auxR.at(i).ProcID << " needs to initiate.";
+                     PrintDebug(Mstring.str(), MASlog, 5);
+                  }
+                  if(blob.auxR.at(i).ProcID == target.at(j) && blob.auxR.at(i).Pstat == running){
+                     blob.auxR.at(i).ComEx = reinitiate;
+                     std::ostringstream Mstring;
+                     Mstring << "Processor" << blob.auxR.at(i).ProcID << " needs to reinitiate.";
+                     PrintDebug(Mstring.str(), MASlog, 5);
+                  }
+                  if(blob.aux2.at(i).ProcID == target.at(j) && blob.aux2.at(i).Pstat == not_running){
+                     blob.aux2.at(i).ComEx = start;
+                     std::ostringstream Mstring;
+                     Mstring << "Processor" << blob.aux2.at(i).ProcID << " needs to initiate.";
+                     PrintDebug(Mstring.str(), MASlog, 5);
+                  }
+                  if(blob.aux2.at(i).ProcID == target.at(j) && blob.aux2.at(i).Pstat == running){
+                     blob.aux2.at(i).ComEx = reinitiate;
+                     std::ostringstream Mstring;
+                     Mstring << "Processor" << blob.aux2.at(i).ProcID << " needs to reinitiate.";
+                     PrintDebug(Mstring.str(), MASlog, 5);
+                  }
+               }
+            }
          break;
       }
       case simplex_wait:
       {
-//         target->ComEx = nothing;  // this give segfault b/c of null ponter
          // no need to do anything
          //     (σ･ω･)σ
+/*         for(arma::uword i = 0; i < blob.n_vert; i++){
+            blob.vertex.at(i).ComEx = nothing;
+//            std::ostringstream Mstring;
+//          Mstring << "Processor" << blob->vertex(i).ProcID << " needs to initiate.";
+//          PrintDebug(Mstring.str(), MASlog, 5);
+         }
+         for(arma::uword i = 0; i < blob.fSize; i++){
+            blob.auxR.at(i).ComEx = nothing;
+            blob.aux2.at(i).ComEx = nothing;
+         }
+*/
          break;
       }
       case shrink:
       {
          PrintDebug("Blob needs to shrink", MASlog, 1);
-         // it should loop over verticies, and send restart message to all processors
-         // except lowest-value vertex with new parameters
-         for (int i = 0; i < blob.vertices; i++) {
-            if (i != blob.lowest) {
-               blob.vertex[i].ComEx = reinitiate;
-//               blob.vertex[i].status = pending;
-            }
-            else {
-               blob.vertex[i].ComEx = nothing;
-            }
+         //loop over all vertices to set to 'reinitiate' initially, then go back and set
+         //the command to nothing for bottom fraction
+         for(arma::uword i = 0; i < blob.n_vert; i++){
+            blob.vertex.at(i).ComEx = reinitiate;
+         }
+         // Since the vertices should be in order, vertex 0 to fSize is the lowest frac
+         for (arma::uword i = 0; i < blob.fSize; i++) {
+            blob.vertex.at(i).ComEx = nothing;
          }  // end for
          break;
       }  // end case collapse
@@ -350,11 +475,14 @@ MASTER(int id, int P, arma::mat inP, double mult)
       {
          done_prog = true;
          // set all ComEx to stop
-         for (int i = 0; i < blob.vertices; i++) {
-            blob.vertex[i].ComEx= stop;
+         for (arma::uword i = 0; i < blob.n_vert; i++) {
+            blob.vertex.at(i).ComEx= stop;
          }
-         for (int i = 0; i < MAXAUX; i++) {
-            blob.aux[i].ComEx= stop;
+         for (arma::uword i = 0; i < blob.fSize; i++) {
+            blob.auxR.at(i).ComEx= stop;
+         }
+         for (arma::uword i = 0; i < blob.fSize; i++) {
+            blob.aux2.at(i).ComEx= stop;
          }
 
          if (crash == task) {
@@ -366,18 +494,18 @@ MASTER(int id, int P, arma::mat inP, double mult)
             MASlog << "\n\n===============the simplx has converged=====================\n" 
                    << "The final parameters are:\n";
 
-            for (int i = 0; i < blob.vertices; i++) {
+            for (arma::uword i = 0; i < blob.n_vert; i++) {
                for (arma::uword j = 0; j < inP.n_cols; j++) {
-                  MASlog << blob.vertex[i].coord[j] << "\t";
+                  MASlog << blob.vertex.at(i).coord(j) << "\t";
                }
-               MASlog << blob.vertex[i].value << '\t' << blob.vertex[i].error;
+               MASlog << blob.vertex.at(i).value << '\t' << blob.vertex.at(i).error;
                MASlog << std::endl;
             }
 
-            MASlog << "The lowest value is from vertex " << blob.lowest << '\n'
+            MASlog << "The lowest value is from vertex " << blob.vertex.at(0).VertID << '\n'
                          << "The parameters are: " << std::endl;
             for (arma::uword j = 0; j < inP.n_cols; j++) {
-               MASlog << blob.vertex[blob.lowest].coord[j] << "\t";
+               MASlog << blob.vertex.at(0).coord(j) << "\t";
             }
             MASlog << std::endl;
             MASlog << std::asctime( std::localtime(&Ctime) ) << ' ' << std::endl;
@@ -404,13 +532,17 @@ MASTER(int id, int P, arma::mat inP, double mult)
 
          std::ostringstream Mstring;
          Mstring << "\n===========ComEx list before sending===========" << std::endl;
-         for (int j = 0; j < blob.vertices; j++) {
-            Mstring << "vertex" << j << " on proc " << blob.vertex[j].ProcID
-                    << " has ComEx = " << blob.vertex[j].ComEx << std::endl;
+         for (arma::uword j = 0; j < blob.n_vert; j++) {
+            Mstring << "vertex" << j << " on proc " << blob.vertex.at(j).ProcID
+                    << " has ComEx = " << blob.vertex.at(j).ComEx << std::endl;
          }
-         for (int k = 0; k < MAXAUX; k++) {
-            Mstring << "aux" << k << " on proc " << blob.aux[k].ProcID
-                    << " has ComEx = " << blob.aux[k].ComEx << std::endl;
+         for (arma::uword k = 0; k < blob.fSize; k++) {
+            Mstring << "auxR" << k << " on proc " << blob.auxR.at(k).ProcID
+                    << " has ComEx = " << blob.auxR.at(k).ComEx << std::endl;
+         }
+         for (arma::uword k = 0; k < blob.fSize; k++) {
+            Mstring << "aux2" << k << " on proc " << blob.aux2.at(k).ProcID
+                    << " has ComEx = " << blob.aux2.at(k).ComEx << std::endl;
          }
          Mstring << "===================================================" << std::endl;
          PrintDebug(Mstring.str(), MASlog, 9);
@@ -419,11 +551,18 @@ MASTER(int id, int P, arma::mat inP, double mult)
       }
 
       // sends and receives for optimize happens here
-      for (int Pj = 1; Pj < P; Pj++) {
+      for (int Pj = 1; Pj < Proc; Pj++) {
 
          WORKER_status PREV_wstat = getPrevWstat(blob, Pj);  // previous status: before recv. Check one by one
 
          Mcomm = GetMcomm(Pj, blob);
+
+         {//XXX test message
+            std::ostringstream Mstring;
+            Mstring << "Current Proc number = " << Pj << '\n'
+                       << "Mcomm = " << Mcomm << std::endl;
+            PrintDebug(Mstring.str(), MASlog, 9);
+         }
 
          MPI_Send(&Mcomm, 1, MPI_INT, Pj, 7, MPI_COMM_WORLD);
          PrintDebug("Done sending above", MASlog, 9);
@@ -432,7 +571,7 @@ MASTER(int id, int P, arma::mat inP, double mult)
             {
                std::ostringstream Mstring;
                Mstring << "proc" << Pj << " is active";
-               PrintDebug(Mstring.str(), MASlog, 7);
+               PrintDebug(Mstring.str(), MASlog, 9);
             }
 
             {
@@ -476,12 +615,12 @@ MASTER(int id, int P, arma::mat inP, double mult)
             {
                std::ostringstream Mstring;
                Mstring << "proc" << Pj << " needs to start/reinitiate";
-               PrintDebug(Mstring.str(), MASlog, 7);
+               PrintDebug(Mstring.str(), MASlog, 1);
             }
             // send starting parameter
             assert(temp_dim > 0);
             arma::vec tempvec(static_cast<arma::uword>(temp_dim));
-            SetVec(tempvec, temp_dim, Pj, blob);
+            SetVec(tempvec, Pj, blob);
 
             {
                std::ostringstream Mstring;
@@ -519,6 +658,13 @@ MASTER(int id, int P, arma::mat inP, double mult)
          }
 
          updateMWstat(Wtemp, Pj, blob);
+         
+         {//XXX test message
+            std::ostringstream Mstring;
+            Mstring << "Current Proc number = " << Pj << '\n'
+                       << "Wtemp = " << Wtemp << std::endl;
+            PrintDebug(Mstring.str(), MASlog, 9);
+         }
 
          DoIprint2 = DetectChangeWstat(blob, PREV_wstat, Pj);
          if (quit == task) {
@@ -532,13 +678,13 @@ MASTER(int id, int P, arma::mat inP, double mult)
          printsimplex(blob, MASlog);//print to MASlog
          std::ostringstream Mstring2;//SIMP output
 
-         for (int j = 0; j < blob.vertices; j++) {
-            Mstring2 << blob.vertex[j].ProcID << ' ';
+         for (arma::uword j = 0; j < blob.n_vert; j++) {
+            Mstring2 << blob.vertex.at(j).ProcID << ' ';
             for (arma::uword q = 0; q < inP.n_cols; q++) {
-               Mstring2 << std::setw(8) << blob.vertex[j].coord[q] << ' ';
+               Mstring2 << std::setw(8) << blob.vertex.at(j).coord(q) << ' ';
             }
-            Mstring2 << std::setw(8) << blob.vertex[j].value << ' '
-                     << std::setw(8) << blob.vertex[j].error << ' '
+            Mstring2 << std::setw(8) << blob.vertex.at(j).value << ' '
+                     << std::setw(8) << blob.vertex.at(j).error << ' '
                      << std::endl;
          }
          PrintDebug(Mstring2.str(), SIMPlog, 1);
@@ -565,6 +711,49 @@ MASTER(int id, int P, arma::mat inP, double mult)
    MASlog.close();
    SIMPlog.close();
 }  // end MASTER
+
+//Debug functions
+void
+CheckProcID(const Notsimplex blob){
+
+   //check ProcIDs between vertex and auxR
+   for(arma::uword i = 0; i < blob.n_vert; i++){
+      for(arma::uword j = 0; j < blob.fSize; j++){
+         if(blob.vertex.at(i).ProcID == blob.auxR.at(j).ProcID){
+            std::cerr << "Identical ProcID between vertex" << i 
+                      << " Proc" << blob.vertex.at(i).ProcID
+                      << " and auxR" << j << " Proc" << blob.auxR.at(j).ProcID << std::endl;
+            MPI_Abort(MPI_COMM_WORLD, 1);   
+         }
+      }
+   }
+
+   //check ProcIDs between vertex and aux2
+   for(arma::uword i = 0; i < blob.n_vert; i++){
+      for(arma::uword j = 0; j < blob.fSize; j++){
+         if(blob.vertex.at(i).ProcID == blob.aux2.at(j).ProcID){
+            std::cerr << "Identical ProcID between vertex" << i 
+                      << " Proc" << blob.vertex.at(i).ProcID
+                      << " and aux2" << j << " Proc" << blob.aux2.at(j).ProcID << std::endl;
+            MPI_Abort(MPI_COMM_WORLD, 1);   
+         }
+      }
+   }
+
+
+   //check ProcIDs between all the vertices
+   for(arma::uword i = 0; i < blob.n_vert; i++){
+      for(arma::uword j = i+1; j < blob.n_vert; j++){
+         if(blob.vertex.at(i).ProcID == blob.vertex.at(j).ProcID){
+            std::cerr << "Identical ProcID between vertex" << i 
+                      << " Proc" << blob.vertex.at(i).ProcID
+                      << " and vertex" << j << " Proc" << blob.vertex.at(j).ProcID << std::endl;
+            MPI_Abort(MPI_COMM_WORLD, 1);   
+         }
+      }
+   }
+
+}
 
 
 /*
